@@ -220,9 +220,10 @@ img{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
 
 /* ============ PARTY / USERS ============ */
 .party-box{width:100%;max-width:560px;z-index:20;}
-.party-add{display:flex;gap:10px;margin-bottom:16px;}
+.party-add{display:flex;gap:10px;margin-bottom:16px;align-items:stretch;}
+.party-add .btn{flex:0 0 auto;white-space:nowrap;padding-left:18px;padding-right:18px;font-size:16px;}
 .inp{
-  flex:1;font-family:'Stardust',monospace;font-size:17px;color:var(--pure);
+  flex:1 1 0;min-width:0;font-family:'Stardust',monospace;font-size:17px;color:var(--pure);
   background:var(--panel-2);border:3px solid var(--line);padding:13px 14px;outline:none;
 }
 .inp:focus{border-color:var(--ice);}
