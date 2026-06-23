@@ -590,7 +590,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .ag-card{position:relative;width:100%;max-width:360px;background:var(--panel);border:3px solid var(--ice-d);
   box-shadow:0 0 0 3px var(--black),0 10px 40px rgba(0,0,0,.6);padding:30px 24px;text-align:center;animation:floatUp .4s ease;
   max-height:90vh;overflow-y:auto;}
-.ag-logo{font-size:34px;margin-bottom:6px;}
+.ag-logo{font-size:34px;margin-bottom:6px;display:inline-block;animation:spinFlake 9s linear infinite;}
+@keyframes spinFlake{to{transform:rotate(360deg);}}
+/* title screen → back-to-login button */
+.title-login{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:25;
+  font-family:'Stardust',monospace;font-weight:700;font-size:12px;color:var(--g3);letter-spacing:1px;
+  background:rgba(13,19,25,.72);border:2px solid var(--line);padding:6px 14px;cursor:pointer;box-shadow:0 0 0 2px var(--black);}
+.title-login:hover{color:var(--ice);border-color:var(--ice);}
 .ag-title{font-size:24px;font-weight:800;color:var(--ice);letter-spacing:2px;margin-bottom:6px;}
 .ag-sub{font-size:13px;color:var(--g4);line-height:1.5;margin-bottom:20px;}
 .ag-sub2{font-size:14px;color:var(--white);font-weight:700;margin-bottom:14px;}
@@ -658,6 +664,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 
   <!-- ============ TITLE ============ -->
   <section class="screen active" id="title">
+    <button class="title-login" id="toLoginBtn">🔓 로그인 화면으로</button>
     <div id="scene">
       <div class="stars" id="stars"></div>
     </div>
@@ -2343,6 +2350,16 @@ function applyLang(){
 
 /* ===================== START ===================== */
 document.getElementById('startBtn').onclick=function(){ resetAll(); show('guide'); };
+document.getElementById('toLoginBtn').onclick=function(){
+  var ag=document.getElementById('authgate'); if(!ag) return;
+  ag.querySelector('#agStep1').style.display='block';
+  ag.querySelector('#agStep2').style.display='none';
+  ag.querySelector('#agStep3').style.display='none';
+  var p=ag.querySelector('#agPass'); if(p) p.value='';
+  var er=ag.querySelector('#agErr'); if(er) er.textContent='';
+  ag.classList.remove('hide');
+  setTimeout(function(){ if(p) p.focus(); }, 60);
+};
 document.getElementById('baseBtn').onclick=function(){
   var s=loadSave();
   if(s){
@@ -2431,7 +2448,8 @@ function rerenderCurrent(){
   }catch(e){ console.warn('rerender failed', e); }
 }
 function subscribeTrip(){
-  if(!SYNC.ref) return;
+  if(!SYNC.ref || SYNC._sub) return;
+  SYNC._sub = true;
   SYNC.ref.onSnapshot(function(doc){
     if(doc.exists){
       var d=doc.data();
