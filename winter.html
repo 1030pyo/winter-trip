@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>눈길원정대 · SNOW QUEST</title>
+<style>
+/* ============ FONT ============ */
+@font-face{
+  font-family:'Stardust';
+  src:url('./Font/PF스타더스트 3.0.ttf') format('truetype');
+  font-weight:400; font-display:swap;
+}
+@font-face{
+  font-family:'Stardust';
+  src:url('./Font/PF스타더스트 3.0 Bold.ttf') format('truetype');
+  font-weight:700; font-display:swap;
+}
+@font-face{
+  font-family:'Stardust';
+  src:url('./Font/PF스타더스트 3.0 ExtraBold.ttf') format('truetype');
+  font-weight:800; font-display:swap;
+}
+
+/* ============ PALETTE (Chroma Noir) ============ */
+:root{
+  --black:#0d0d0d; --g1:#383838; --g2:#4f4f4f; --g3:#828282; --g4:#b5b5b5; --white:#d9d9d9; --pure:#fff;
+  --ice-d:#306173; --ice-m:#3f819a; --ice:#4dcced;
+  --water-dd:#2a455a; --water-d:#306082; --water:#639bff;
+  --purple-d:#651e6f; --purple:#cc49e9;
+  --pink-d:#9a2e8a; --pink:#f873e4;
+  --red-d:#903122; --red:#e64e35; --red-l:#fb684f;
+  --orange-d:#b04b05; --orange:#ed7929;
+  --brown-d:#60361d; --brown:#a86437; --tan:#d77c40;
+  --gold-d:#a9832a; --gold:#fbca43;
+  --green-d:#328c25; --green:#5de34a; --grass:#a8e550;
+  --panel:#10171d; --panel-2:#0a0f14; --line:#2a455a;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  font-family:'Stardust',monospace;
+  background:var(--black);
+  color:var(--white);
+  overflow:hidden;
+  -webkit-font-smoothing:none;
+  letter-spacing:.3px;
+  cursor:default;
+  user-select:none;
+}
+img{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
+.spr{image-rendering:pixelated;}
+
+/* ============ APP SHELL ============ */
+#app{position:fixed;inset:0;}
+#snow{position:fixed;inset:0;z-index:60;pointer-events:none;}
+
+.screen{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:24px;
+  opacity:0;transform:translateY(18px);
+  transition:opacity .5s ease, transform .5s ease;
+  z-index:10;
+}
+.screen.active{display:flex;}
+.screen.shown{opacity:1;transform:translateY(0);}
+
+/* ============ SCROLLBAR ============ */
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--panel-2);}
+::-webkit-scrollbar-thumb{background:var(--ice-d);border:2px solid var(--panel-2);}
+::-webkit-scrollbar-thumb:hover{background:var(--ice-m);}
+
+/* ============ PIXEL PANEL / BUTTON ============ */
+.panel{
+  background:var(--panel);
+  border:3px solid var(--ice-d);
+  box-shadow:
+    0 0 0 3px var(--black),
+    inset 0 0 0 1px rgba(77,204,237,.18),
+    0 0 22px rgba(13,13,13,.9);
+  position:relative;
+}
+.panel::before{
+  content:"";position:absolute;top:-3px;left:-3px;width:9px;height:9px;
+  background:var(--ice);box-shadow:0 0 0 3px var(--black);
+}
+.panel::after{
+  content:"";position:absolute;bottom:-3px;right:-3px;width:9px;height:9px;
+  background:var(--ice);box-shadow:0 0 0 3px var(--black);
+}
+
+.btn{
+  font-family:'Stardust',monospace;font-weight:800;font-size:18px;
+  color:var(--black);background:var(--ice);
+  border:none;padding:14px 26px;
+  box-shadow:0 5px 0 var(--ice-d), 0 5px 0 3px var(--black);
+  cursor:pointer;transition:transform .08s, box-shadow .08s, background .15s;
+  text-transform:uppercase;letter-spacing:1px;position:relative;
+}
+.btn:hover{background:var(--pure);transform:translateY(-2px);}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ice-d),0 1px 0 3px var(--black);}
+.btn.ghost{background:var(--panel);color:var(--ice);box-shadow:0 5px 0 var(--line),0 5px 0 3px var(--black);}
+.btn.ghost:hover{background:var(--water-dd);color:var(--pure);}
+.btn.gold{background:var(--gold);box-shadow:0 5px 0 var(--gold-d),0 5px 0 3px var(--black);}
+.btn.gold:hover{background:#ffe07a;}
+.btn:disabled{opacity:.35;cursor:not-allowed;filter:grayscale(.6);}
+.btn:disabled:hover{transform:none;background:var(--ice);}
+
+/* ============ TITLE SCREEN SCENE ============ */
+#scene{position:absolute;inset:0;z-index:1;overflow:hidden;background:#0d0d0d;}
+/* layers that hold the 1.gif elements spread across the whole screen (filled by JS) */
+#sky{position:absolute;inset:0;z-index:1;}
+#land{position:absolute;inset:0;z-index:3;}
+#sky img,#land img{image-rendering:pixelated;}
+.parallax{position:absolute;inset:0;will-change:transform;}
+
+.stars{position:absolute;inset:0;}
+.star{position:absolute;width:2px;height:2px;background:var(--white);animation:twinkle 3s steps(2) infinite;}
+@keyframes twinkle{0%,100%{opacity:.15}50%{opacity:1}}
+
+.aurora{position:absolute;top:-5%;left:-10%;width:120%;height:55%;opacity:.5;mix-blend-mode:screen;
+  background:
+    radial-gradient(120% 60% at 30% 0%, rgba(93,227,74,.0) 40%, rgba(77,204,237,.28) 60%, rgba(93,227,74,.22) 75%, rgba(13,13,13,0) 90%);
+  animation:aur 9s ease-in-out infinite alternate;}
+.aurora.b{opacity:.4;background:radial-gradient(130% 55% at 65% 0%, rgba(204,73,233,.0) 45%, rgba(99,155,255,.22) 65%, rgba(93,227,74,.18) 82%, rgba(13,13,13,0) 92%);animation-duration:12s;}
+@keyframes aur{0%{transform:translateX(-3%) skewX(-4deg);opacity:.35}100%{transform:translateX(4%) skewX(4deg);opacity:.6}}
+
+.moon{position:absolute;top:9%;right:14%;width:54px;height:54px;border-radius:50%;
+  background:radial-gradient(circle at 38% 38%, #f2f8ff 0 46%, #b5c9d6 47% 70%, #6e8a9a 71% 100%);
+  box-shadow:0 0 0 4px rgba(77,204,237,.12),0 0 30px 6px rgba(77,204,237,.22);
+  image-rendering:pixelated;}
+.moon::after{content:"";position:absolute;top:-10%;right:-14%;width:46px;height:46px;border-radius:50%;background:#0b1016;}
+
+.cloud{position:absolute;image-rendering:pixelated;opacity:.65;animation:drift 60s linear infinite;}
+@keyframes drift{from{transform:translateX(-20vw)}to{transform:translateX(120vw)}}
+
+.ridge{position:absolute;left:0;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px;}
+.ridge img{height:100%;width:auto;opacity:.9;}
+
+/* generated snowfield: 1.gif's own ice strip tiled across the full width; height/scale set in JS */
+.ground{position:absolute;left:0;bottom:0;width:100%;z-index:2;
+  background:#0d0d0d url('./Asset/ground_tile.png') repeat-x top left;
+  image-rendering:pixelated;}
+
+.ftree{position:absolute;bottom:13%;transform:translateX(-50%);image-rendering:pixelated;opacity:.96;}
+.cabin-wrap{position:absolute;bottom:13.1%;left:50%;transform:translateX(-50%);}
+.cabin-wrap img{height:104px;width:auto;filter:drop-shadow(0 0 1px rgba(13,13,13,.9));}
+
+/* ============ TITLE LOGO ============ */
+#title .titlewrap{position:relative;z-index:20;text-align:center;animation:floatUp 1s ease;}
+@keyframes floatUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.kotitle{
+  display:block;margin:0 auto;width:min(86vw,600px);height:auto;
+  image-rendering:pixelated;
+  animation:logoglow 3.5s ease-in-out infinite;
+}
+@keyframes logoglow{
+  0%,100%{filter:drop-shadow(4px 4px 0 var(--ice-d)) drop-shadow(8px 8px 0 var(--black)) drop-shadow(0 0 14px rgba(77,204,237,.4));}
+  50%{filter:drop-shadow(4px 4px 0 var(--ice-d)) drop-shadow(8px 8px 0 var(--black)) drop-shadow(0 0 30px rgba(77,204,237,.85));}
+}
+.entitle{
+  font-weight:800;font-size:clamp(18px,4vw,40px);letter-spacing:8px;color:var(--ice);
+  margin-top:10px;text-shadow:3px 3px 0 var(--black);
+}
+.tagline{margin-top:18px;color:var(--g4);font-size:clamp(13px,2.4vw,19px);text-shadow:2px 2px 0 var(--black);}
+.start-row{margin-top:42px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+.start-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+.press{font-weight:800;font-size:20px;color:var(--gold);animation:blink 1.05s steps(2) infinite;text-shadow:2px 2px 0 var(--black);}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.credit{position:absolute;bottom:14px;left:0;width:100%;text-align:center;color:var(--g2);font-size:12px;z-index:20;}
+
+/* ============ HEADINGS ============ */
+.scr-head{text-align:center;margin-bottom:22px;z-index:20;}
+.scr-kick{color:var(--ice);font-weight:800;letter-spacing:3px;font-size:14px;margin-bottom:6px;}
+.scr-title{font-weight:800;font-size:clamp(24px,4.5vw,40px);color:var(--pure);text-shadow:3px 3px 0 var(--black);}
+.scr-sub{color:var(--g3);font-size:14px;margin-top:8px;}
+
+/* ============ GUIDE SELECT ============ */
+.guide-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:920px;width:100%;z-index:20;}
+.gcard{
+  background:var(--panel);border:3px solid var(--line);padding:18px 12px 16px;text-align:center;
+  cursor:pointer;transition:transform .15s, border-color .15s, box-shadow .15s;position:relative;
+  box-shadow:0 0 0 3px var(--black);
+}
+.gcard:hover{transform:translateY(-8px);border-color:var(--ice);box-shadow:0 0 0 3px var(--black),0 10px 24px rgba(77,204,237,.18);}
+.gcard.sel{border-color:var(--gold);box-shadow:0 0 0 3px var(--black),0 0 22px rgba(251,202,67,.35);}
+.gcard .portrait{height:96px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:12px;}
+.gcard .portrait img{height:auto;animation:bob 1.6s steps(2) infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.gcard .gname{font-weight:800;font-size:20px;color:var(--ice);}
+.gcard .grole{font-size:12px;color:var(--gold);margin:6px 0;letter-spacing:1px;}
+.gcard .gdesc{font-size:12px;color:var(--g4);line-height:1.5;min-height:48px;}
+.gcard .gtag{display:inline-block;margin-top:8px;font-size:11px;color:var(--black);background:var(--ice-m);padding:2px 8px;}
+
+/* ============ NPC DIALOG DOCK ============ */
+#dock{
+  position:fixed;left:0;bottom:0;width:100%;z-index:55;display:none;
+  padding:0 18px 18px;pointer-events:none;
+}
+#dock.show{display:block;animation:dockUp .4s ease;}
+@keyframes dockUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.dock-inner{max-width:860px;margin:0 auto;display:flex;gap:14px;align-items:flex-end;pointer-events:auto;}
+.dock-portrait{
+  flex:0 0 auto;width:86px;height:86px;background:var(--panel);border:3px solid var(--ice-d);
+  box-shadow:0 0 0 3px var(--black);display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;
+}
+.dock-portrait img{height:auto;animation:bob 1.5s steps(2) infinite;}
+.dock-bubble{
+  flex:1;background:var(--panel);border:3px solid var(--ice-d);box-shadow:0 0 0 3px var(--black);
+  padding:14px 18px;min-height:74px;position:relative;
+}
+.dock-name{position:absolute;top:-14px;left:14px;background:var(--ice);color:var(--black);
+  font-weight:800;font-size:13px;padding:2px 10px;box-shadow:0 0 0 3px var(--black);}
+.dock-text{font-size:16px;line-height:1.55;color:var(--white);}
+.dock-text .cur{color:var(--gold);animation:blink 1s steps(2) infinite;}
+
+/* ============ PARTY / USERS ============ */
+.party-box{width:100%;max-width:560px;z-index:20;}
+.party-add{display:flex;gap:10px;margin-bottom:16px;}
+.inp{
+  flex:1;font-family:'Stardust',monospace;font-size:17px;color:var(--pure);
+  background:var(--panel-2);border:3px solid var(--line);padding:13px 14px;outline:none;
+}
+.inp:focus{border-color:var(--ice);}
+.user-list{display:flex;flex-direction:column;gap:10px;max-height:34vh;overflow-y:auto;padding-right:6px;}
+.user-row{
+  display:flex;align-items:center;gap:12px;background:var(--panel);border:3px solid var(--line);
+  padding:10px 12px;box-shadow:0 0 0 3px var(--black);animation:floatUp .3s ease;
+}
+.user-row .uava{width:40px;height:40px;background:var(--panel-2);border:2px solid var(--ice-d);display:flex;align-items:flex-end;justify-content:center;flex:0 0 auto;}
+.user-row .uava img{height:32px;width:auto;}
+.user-row .uname{flex:1;font-size:17px;color:var(--white);font-weight:700;}
+.user-row .ulead{font-size:11px;color:var(--gold);border:2px solid var(--gold-d);padding:1px 6px;}
+.user-row .udel{cursor:pointer;color:var(--red-l);font-weight:800;font-size:18px;padding:0 6px;}
+.user-row .udel:hover{color:var(--red);}
+.party-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+.party-count{color:var(--g4);font-size:14px;}
+.party-count b{color:var(--ice);font-size:20px;}
+
+/* ============ MAP ============ */
+#map .map-stage{position:relative;z-index:20;display:flex;flex-direction:column;align-items:center;}
+.map-frame{position:relative;background:linear-gradient(#0a1016,#0d171f);padding:14px;}
+#japan{image-rendering:pixelated;display:block;}
+.markers{position:absolute;inset:14px;pointer-events:none;}
+/* route line overlay */
+.route-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;}
+.route-line-glow{fill:none;stroke:var(--gold);stroke-width:8px;opacity:.22;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;}
+.route-line{fill:none;stroke:var(--gold);stroke-width:2.6px;stroke-linecap:round;stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;stroke-dasharray:7 6;animation:routeFlow .8s linear infinite;}
+@keyframes routeFlow{to{stroke-dashoffset:-13;}}
+.route-arrow{fill:var(--gold);stroke:var(--black);stroke-width:.3;}
+.mk{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;text-align:center;z-index:5;}
+.mk .dot{width:11px;height:11px;border-radius:50%;background:var(--ice-m);border:2px solid var(--ice);
+  box-shadow:0 0 0 2px var(--black);margin:0 auto;transition:transform .12s,background .12s;}
+.mk:hover .dot{background:var(--ice);transform:scale(1.25);}
+.mk .mlabel{font-size:11px;color:var(--white);margin-top:3px;text-shadow:1px 1px 0 var(--black),0 0 4px var(--black);white-space:nowrap;font-weight:700;}
+/* order badge */
+.mk .mk-num{position:absolute;left:50%;top:-4px;transform:translate(-50%,-100%);
+  background:var(--gold);color:var(--black);font-size:10px;font-weight:800;line-height:15px;height:15px;min-width:15px;
+  padding:0 3px;border-radius:8px;border:1.5px solid var(--black);box-shadow:0 0 0 1.5px var(--gold);white-space:nowrap;}
+.mk.sel{z-index:7;}
+.mk.sel .dot{background:var(--gold);border-color:var(--pure);box-shadow:0 0 0 2px var(--black),0 0 10px var(--gold);}
+.mk.sel .mlabel{color:var(--gold);font-weight:800;}
+/* start node = green flag */
+.mk.start .dot{background:#5fe08a;border-color:var(--pure);box-shadow:0 0 0 2px var(--black),0 0 10px #5fe08a;}
+.mk.start .mk-num{background:#5fe08a;box-shadow:0 0 0 1.5px #5fe08a;}
+.mk.start .mlabel{color:#7df0a3;}
+.mk.start::after{content:"";position:absolute;left:50%;top:5px;width:26px;height:26px;transform:translate(-50%,-50%);
+  border:2px solid #5fe08a;border-radius:50%;animation:pulse 1.5s ease-out infinite;}
+.mk.active .dot{transform:scale(1.3);background:var(--pure);}
+@keyframes pulse{0%{opacity:.9;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.7)}}
+
+/* region popup */
+.rpop{position:absolute;z-index:30;width:184px;display:none;pointer-events:auto;
+  transform:translate(-50%,-104%);
+  background:var(--panel);border:8px solid transparent;border-image:url('./Asset/Frame/ui/gf_thin.png') 7 stretch;
+  box-shadow:0 0 0 3px var(--black);padding:10px 12px 12px;}
+.rpop.show{display:block;animation:floatUp .2s ease;}
+.rpop.below{transform:translate(-50%,14%);}
+.rpop-x{position:absolute;top:2px;right:6px;color:var(--g3);font-weight:800;cursor:pointer;font-size:14px;}
+.rpop-x:hover{color:var(--red-l);}
+.rpop-name{font-weight:800;font-size:16px;color:var(--ice);margin-bottom:4px;}
+.rpop-route{font-size:11px;font-weight:800;color:var(--gold);margin:-2px 0 6px;}
+.rpop-route.start{color:#7df0a3;}
+.rpop-diff{font-size:11px;color:var(--g4);margin-bottom:2px;}
+.rpop-stars{font-size:13px;letter-spacing:1px;margin-bottom:8px;}
+.rpop-stars .on{color:var(--gold);}
+.rpop-stars .off{color:var(--g2);}
+.rpop-desc{font-size:12px;color:var(--g4);line-height:1.5;margin-bottom:10px;}
+.rpop-btn{width:100%;font-family:'Stardust';font-weight:800;font-size:13px;cursor:pointer;
+  background:var(--ice);color:var(--black);border:none;padding:8px;box-shadow:0 3px 0 var(--ice-d),0 3px 0 2px var(--black);}
+.rpop-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ice-d),0 1px 0 2px var(--black);}
+.rpop-btn.on{background:var(--gold);box-shadow:0 3px 0 var(--gold-d),0 3px 0 2px var(--black);}
+
+.map-legend{margin-top:14px;color:var(--g3);font-size:12px;text-align:center;max-width:340px;}
+.map-legend b{color:var(--gold);}
+/* ===== departure board (전광판) ===== */
+.depboard{width:100%;max-width:560px;margin:0 auto 16px;background:#070b0e;
+  border:3px solid var(--line);box-shadow:inset 0 0 0 2px var(--black),0 0 0 3px var(--black),0 0 22px rgba(251,202,67,.10);
+  padding:9px 11px 11px;position:relative;}
+.depboard::after{content:"";position:absolute;inset:3px;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.16) 3px);}
+.dep-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;
+  border-bottom:1px dashed #2a3942;padding-bottom:7px;}
+.dep-led{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 7px var(--gold);
+  animation:depBlink 1.1s steps(1) infinite;}
+@keyframes depBlink{50%{opacity:.25;box-shadow:none;}}
+.dep-title{font-size:12px;letter-spacing:2px;color:#ffd866;font-weight:800;text-shadow:0 0 6px rgba(251,202,67,.5);}
+.dep-count{margin-left:auto;font-size:11px;color:#7c8a93;letter-spacing:1px;}
+.dep-track{display:flex;align-items:stretch;gap:0;overflow-x:auto;min-height:52px;padding:9px 2px 4px;perspective:480px;}
+.dep-empty{color:#5a6b74;font-size:12px;letter-spacing:1px;align-self:center;padding:6px 4px;}
+.dep-arrow{display:flex;align-items:center;color:var(--gold);font-size:15px;padding:0 5px;opacity:.8;}
+.dep-card{position:relative;flex:0 0 auto;min-width:62px;background:#15110a;border:1px solid #3a2f12;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5px 12px 6px;
+  box-shadow:inset 0 0 0 1px #000;transform-origin:top center;animation:depFlip .34s ease-out;}
+.dep-card::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.6);}
+@keyframes depFlip{0%{transform:rotateX(-90deg);opacity:0;}60%{transform:rotateX(12deg);}100%{transform:rotateX(0);opacity:1;}}
+.dep-no{font-size:9px;color:#9b7a2a;letter-spacing:1px;margin-bottom:1px;}
+.dep-name{font-size:15px;font-weight:800;color:#ffcf4d;letter-spacing:1px;text-shadow:0 0 6px rgba(251,202,67,.45);white-space:nowrap;}
+.dep-sub{font-size:8px;color:#8a6f2e;letter-spacing:1px;text-transform:uppercase;}
+.dep-card.start .dep-name{color:#7df0a3;text-shadow:0 0 6px rgba(125,240,163,.5);}
+.dep-card.start .dep-no{color:#3f9c63;}
+.dep-x{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#3a2412;
+  border:1px solid #6b4a1d;color:#ffcf4d;font-size:10px;line-height:14px;text-align:center;cursor:pointer;z-index:2;}
+.dep-x:hover{background:var(--red,#c0392b);color:#fff;}
+.map-foot{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;justify-content:center;}
+.map-sel{color:var(--g4);font-size:13px;}
+.map-sel b{color:var(--gold);font-size:18px;}
+.btn-mini{font-family:'Stardust';font-size:12px;font-weight:700;cursor:pointer;color:var(--white);
+  background:#15212c;border:2px solid var(--g2);padding:5px 10px;border-radius:3px;transition:.12s;}
+.btn-mini:hover:not(:disabled){border-color:var(--ice);color:var(--ice);}
+.btn-mini:disabled{opacity:.35;cursor:default;}
+
+/* ============ SURVEY ============ */
+.survey-box{width:100%;max-width:600px;z-index:20;}
+.steps{display:flex;justify-content:center;gap:7px;margin-bottom:18px;}
+.steps i{width:10px;height:10px;background:var(--line);box-shadow:0 0 0 2px var(--black);transition:background .2s;}
+.steps i.on{background:var(--ice);}
+.steps i.done{background:var(--ice-m);}
+.qcard{background:var(--panel);border:3px solid var(--ice-d);box-shadow:0 0 0 3px var(--black);padding:26px 24px;min-height:230px;display:flex;flex-direction:column;}
+.qnum{color:var(--gold);font-weight:800;font-size:13px;letter-spacing:2px;margin-bottom:6px;}
+.qtitle{font-weight:800;font-size:22px;color:var(--pure);margin-bottom:18px;line-height:1.35;}
+.opts{display:flex;flex-wrap:wrap;gap:11px;}
+.opt{
+  font-family:'Stardust',monospace;font-size:16px;font-weight:700;color:var(--white);
+  background:var(--panel-2);border:3px solid var(--line);padding:12px 18px;cursor:pointer;
+  transition:transform .1s,border-color .15s,background .15s,color .15s;
+}
+.opt:hover{border-color:var(--ice);transform:translateY(-2px);}
+.opt.sel{background:var(--ice);color:var(--black);border-color:var(--ice);}
+.opt.multi.sel{background:var(--gold);border-color:var(--gold);}
+.q-hint{color:var(--g3);font-size:13px;margin-top:14px;}
+/* budget */
+.budget-val{font-weight:800;font-size:36px;color:var(--gold);text-align:center;margin:6px 0 14px;text-shadow:2px 2px 0 var(--black);}
+.budget-val small{font-size:16px;color:var(--g4);}
+input[type=range]{-webkit-appearance:none;width:100%;height:14px;background:var(--panel-2);border:3px solid var(--line);outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;background:var(--ice);border:3px solid var(--black);cursor:pointer;box-shadow:0 0 0 2px var(--ice-d);}
+.budget-marks{display:flex;justify-content:space-between;color:var(--g3);font-size:11px;margin-top:8px;}
+.budget-quick{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+.budget-quick .opt{padding:8px 12px;font-size:13px;}
+/* nights stepper */
+.stepper{display:flex;align-items:center;justify-content:center;gap:18px;margin:10px 0;}
+.stepper button{font-family:'Stardust';font-weight:800;font-size:26px;width:54px;height:54px;background:var(--ice);color:var(--black);border:none;box-shadow:0 4px 0 var(--ice-d),0 4px 0 3px var(--black);cursor:pointer;}
+.stepper button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ice-d),0 1px 0 3px var(--black);}
+.stepper .nval{font-weight:800;font-size:30px;color:var(--pure);min-width:120px;text-align:center;}
+.stepper .nval small{display:block;font-size:14px;color:var(--g4);font-weight:400;}
+/* month */
+.months{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+.month{width:88px;text-align:center;}
+.survey-foot{display:flex;justify-content:space-between;margin-top:20px;}
+
+/* ============ LOADING ============ */
+#loading .load-box{z-index:20;text-align:center;max-width:520px;width:100%;}
+.load-npc{margin-bottom:20px;}
+.load-npc img{height:74px;width:auto;animation:bob 1s steps(2) infinite;filter:drop-shadow(0 0 10px rgba(77,204,237,.5));}
+.load-title{font-weight:800;font-size:26px;color:var(--pure);margin-bottom:8px;}
+.load-line{color:var(--ice);font-size:15px;height:22px;margin-bottom:22px;}
+.bar{height:26px;background:var(--panel-2);border:3px solid var(--ice-d);box-shadow:0 0 0 3px var(--black);position:relative;overflow:hidden;}
+.bar .fill{height:100%;width:0%;background:repeating-linear-gradient(90deg,var(--ice) 0 10px,var(--ice-m) 10px 20px);transition:width .2s linear;}
+.bar .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--black);font-size:14px;mix-blend-mode:difference;}
+
+/* ============ PLAN RESULT ============ */
+#plan{justify-content:flex-start;padding-top:30px;padding-bottom:140px;overflow-y:auto;align-items:center;}
+.plan-wrap{width:100%;max-width:780px;z-index:20;}
+.plan-hero{text-align:center;margin-bottom:18px;}
+.plan-hero .scr-kick{color:var(--gold);}
+.plan-hero h2{font-weight:800;font-size:clamp(24px,4vw,34px);color:var(--pure);text-shadow:3px 3px 0 var(--black);}
+.plan-hero .ph-sub{color:var(--g4);font-size:14px;margin-top:8px;}
+.plan-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+.chip{font-size:12px;color:var(--ice);background:var(--panel);border:2px solid var(--ice-d);padding:5px 10px;box-shadow:0 0 0 2px var(--black);}
+.chip b{color:var(--gold);}
+
+.budget-card{background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 3px var(--black);padding:16px 18px;margin:18px 0;}
+.budget-card .bc-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:14px;color:var(--g4);}
+.budget-card .bc-top b{color:var(--gold);font-size:20px;}
+.bc-bar{height:20px;background:var(--panel-2);border:2px solid var(--line);position:relative;overflow:hidden;}
+.bc-bar .bf{height:100%;background:repeating-linear-gradient(90deg,var(--green) 0 8px,var(--green-d) 8px 16px);transition:width .8s ease;}
+.bc-bar.over .bf{background:repeating-linear-gradient(90deg,var(--red) 0 8px,var(--red-d) 8px 16px);}
+.bc-note{font-size:12px;color:var(--g3);margin-top:8px;}
+
+.day-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.day-tab{font-family:'Stardust';font-weight:800;font-size:14px;color:var(--g4);background:var(--panel);border:3px solid var(--line);padding:9px 16px;cursor:pointer;box-shadow:0 0 0 2px var(--black);}
+.day-tab.on{background:var(--ice);color:var(--black);border-color:var(--ice);}
+
+.day-panel{display:none;}
+.day-panel.on{display:block;animation:floatUp .4s ease;}
+.day-head{color:var(--gold);font-weight:800;font-size:16px;margin-bottom:14px;border-bottom:2px solid var(--line);padding-bottom:8px;}
+
+.tl{position:relative;padding-left:8px;}
+.tl-item{display:flex;gap:14px;margin-bottom:14px;align-items:stretch;animation:floatUp .4s ease both;}
+.tl-time{flex:0 0 56px;text-align:right;color:var(--ice);font-weight:800;font-size:13px;padding-top:14px;}
+.tl-rail{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;}
+.tl-icon{width:42px;height:42px;background:var(--panel);border:3px solid var(--ice-d);box-shadow:0 0 0 2px var(--black);display:flex;align-items:center;justify-content:center;}
+.tl-icon img{height:24px;width:auto;}
+.tl-icon.meal{border-color:var(--gold-d);}
+.tl-line{flex:1;width:3px;background:var(--line);margin:2px 0;}
+.tl-item:last-child .tl-line{display:none;}
+.tl-card{flex:1;background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 2px var(--black);padding:12px 14px;}
+.tl-card .tc-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+.tl-card .tc-name{font-weight:800;font-size:17px;color:var(--pure);}
+.tl-card .tc-area{font-size:11px;color:var(--g3);}
+.tl-card .tc-cost{font-size:13px;color:var(--gold);font-weight:800;white-space:nowrap;}
+.tl-card .tc-desc{font-size:13px;color:var(--g4);line-height:1.5;margin-top:6px;}
+.tl-card .tc-tip{font-size:12px;color:var(--ice);margin-top:8px;border-left:3px solid var(--ice-d);padding-left:8px;}
+.tl-card .tc-tip b{color:var(--gold);}
+.tc-links{display:flex;gap:8px;margin-top:10px;}
+.tc-links a{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;
+  background:var(--panel-2);border:2px solid var(--line);box-shadow:0 0 0 2px var(--black);
+  color:var(--g3);cursor:pointer;transition:transform .1s,color .15s,border-color .15s;}
+.tc-links a:hover{transform:translateY(-2px);}
+.tc-links a.ig:hover{color:var(--pink);border-color:var(--pink-d);}
+.tc-links a.gm:hover{color:var(--green);border-color:var(--green-d);}
+.tc-links svg{width:18px;height:18px;display:block;}
+
+.plan-foot{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap;}
+.plan-tipbox{background:var(--panel);border:3px solid var(--gold-d);box-shadow:0 0 0 2px var(--black);padding:14px 16px;margin-top:18px;}
+.plan-tipbox .pt-h{color:var(--gold);font-weight:800;font-size:14px;margin-bottom:6px;}
+.plan-tipbox ul{list-style:none;}
+.plan-tipbox li{font-size:13px;color:var(--g4);line-height:1.6;padding-left:14px;position:relative;}
+.plan-tipbox li::before{content:"›";position:absolute;left:0;color:var(--ice);}
+
+/* back button small */
+.backbtn{position:fixed;top:16px;left:16px;z-index:70;font-family:'Stardust';font-weight:800;font-size:13px;
+  background:var(--panel);color:var(--ice);border:3px solid var(--ice-d);box-shadow:0 0 0 3px var(--black);
+  padding:8px 14px;cursor:pointer;display:none;}
+.backbtn:hover{background:var(--water-dd);color:var(--pure);}
+.backbtn.show{display:block;}
+
+/* ============ CAMP (room/snowfield deco) ============ */
+#camp{justify-content:flex-start;padding-top:26px;padding-bottom:170px;overflow-y:auto;}
+.camp-tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;z-index:20;}
+.camp-tab{font-family:'Stardust';font-weight:800;font-size:14px;color:var(--g4);background:var(--panel);border:3px solid var(--line);padding:8px 14px;cursor:pointer;box-shadow:0 0 0 2px var(--black);}
+.camp-tab.on{background:var(--ice);color:var(--black);border-color:var(--ice);}
+.camp-tab.all{color:var(--gold);}
+.camp-tab.all.on{background:var(--gold);color:var(--black);border-color:var(--gold);}
+.camp-main{z-index:20;display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;}
+
+.stage-wrap{position:relative;}
+.camp-stage{position:relative;width:360px;height:260px;overflow:hidden;transform-origin:top left;
+  background:linear-gradient(#0a0f16 0%,#0d141c 55%,#0d0d0d 100%);
+  border:3px solid var(--ice-d);box-shadow:0 0 0 3px var(--black),inset 0 0 30px rgba(13,13,13,.8);}
+.camp-stage .cs-aurora{position:absolute;top:0;left:-10%;width:120%;height:42%;opacity:.4;mix-blend-mode:screen;
+  background:radial-gradient(120% 60% at 40% 0%,rgba(77,204,237,.25) 50%,rgba(93,227,74,.18) 72%,rgba(13,13,13,0) 90%);}
+.camp-stage .cs-ground{position:absolute;left:0;bottom:0;width:100%;height:42px;
+  background:#0d0d0d url('./Asset/ground_tile.png') repeat-x top left;image-rendering:pixelated;}
+.cs-slot{position:absolute;transform:translate(-50%,-100%);cursor:pointer;}
+.cs-slot .ph{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);
+  width:24px;height:24px;border:2px dashed var(--ice-m);border-radius:4px;opacity:.45;
+  display:flex;align-items:center;justify-content:center;color:var(--ice-m);font-size:15px;font-weight:800;}
+.cs-slot.filled .ph{display:none;}
+.cs-slot img{display:block;width:auto;filter:drop-shadow(0 1px 0 rgba(13,13,13,.9));}
+.cs-slot:hover .ph{opacity:.95;border-color:var(--ice);}
+.cs-slot.filled:hover img{filter:drop-shadow(0 0 4px rgba(251,202,67,.9));}
+
+.camp-palette{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:400px;padding-bottom:20px;}
+.pal-item{width:52px;height:52px;background:var(--panel);border:3px solid var(--line);box-shadow:0 0 0 2px var(--black);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:transform .1s,border-color .15s;}
+.pal-item:hover{transform:translateY(-2px);border-color:var(--ice);}
+.pal-item.sel{border-color:var(--gold);box-shadow:0 0 0 2px var(--black),0 0 12px rgba(251,202,67,.4);}
+.pal-item img{max-width:36px;max-height:36px;width:auto;height:auto;}
+.pal-item .pl-name{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--g3);white-space:nowrap;}
+.pal-item.eraser{font-size:20px;color:var(--red-l);font-weight:800;}
+
+.camp-all{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:18px;width:100%;max-width:780px;}
+.camp-card{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;}
+.camp-card .cc-name{font-weight:800;color:var(--ice);font-size:15px;}
+.camp-card .cc-name .lead{color:var(--gold);font-size:10px;margin-left:4px;border:2px solid var(--gold-d);padding:0 4px;}
+.mini-wrap{overflow:hidden;border:3px solid var(--line);box-shadow:0 0 0 2px var(--black);}
+.camp-card:hover .mini-wrap{border-color:var(--ice);}
+.camp-hint{color:var(--g3);font-size:12px;text-align:center;max-width:360px;line-height:1.5;}
+
+/* ============ GAME FRAME SKIN (Chroma Noir UI pack) ============ */
+.qcard,.budget-card,.plan-tipbox,.party-box,.map-frame,
+.dock-bubble,.dock-portrait,.items-panel{
+  border:8px solid transparent;
+  border-image:url('./Asset/Frame/ui/gf_bold.png') 8 stretch;
+  background-color:var(--panel);
+  box-shadow:0 0 0 3px var(--black);
+}
+.plan-tipbox{background-color:var(--panel);}
+/* drop the old ice corner-gems on reskinned panels */
+.party-box::before,.party-box::after,.map-frame::before,.map-frame::after{display:none;}
+
+/* banner-style title plates */
+.scr-title,.plan-hero h2{
+  display:inline-block;
+  border:9px solid transparent;
+  border-image:url('./Asset/Frame/ui/gf_bold.png') 8 stretch;
+  background-color:var(--panel-2);
+  padding:5px 26px;box-shadow:0 0 0 3px var(--black);
+}
+/* inventory / stat boxes get a distinct rivet-corner frame */
+.budget-card,.items-panel{border-image:url('./Asset/Frame/ui/gf_rivet.png') 8 stretch;}
+.camp-stage{border:8px solid transparent;border-image:url('./Asset/Frame/ui/gf_bold.png') 8 stretch;}
+
+/* guide cards — thin ice frame, gold frame when selected */
+.gcard{border:7px solid transparent;border-image:url('./Asset/Frame/ui/gf_thin.png') 7 stretch;box-shadow:0 0 0 3px var(--black);}
+.gcard:hover{transform:translateY(-8px);box-shadow:0 0 0 3px var(--black),0 10px 24px rgba(77,204,237,.2);}
+.gcard.sel{border-image:url('./Asset/Frame/ui/gf_thin_gold.png') 7 stretch;box-shadow:0 0 0 3px var(--black),0 0 22px rgba(251,202,67,.4);}
+/* inputs — thin ice frame */
+.inp{border:7px solid transparent;border-image:url('./Asset/Frame/ui/gf_thin.png') 7 stretch;}
+.inp:focus{box-shadow:0 0 0 2px var(--ice);}
+/* option chips — ice border tone */
+.opt{border-color:var(--ice-d);}
+.opt:hover{border-color:var(--ice);}
+
+.items-panel{padding:18px 14px 16px;position:relative;margin-top:10px;max-width:430px;}
+.items-panel .camp-palette{padding-bottom:0;margin:0;}
+.items-title{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:var(--ice);color:var(--black);font-weight:800;font-size:13px;letter-spacing:2px;
+  padding:2px 16px;box-shadow:0 0 0 3px var(--black);white-space:nowrap;}
+
+/* ============ BASE CAMP HUB ============ */
+#basecamp{justify-content:flex-start;padding-top:26px;padding-bottom:170px;overflow-y:auto;}
+.bc-wrap{width:100%;max-width:760px;z-index:20;display:flex;flex-direction:column;gap:16px;}
+.bc-hero{position:relative;border:8px solid transparent;border-image:url('./Asset/Frame/ui/gf_bold.png') 8 stretch;
+  box-shadow:0 0 0 3px var(--black);background:#0d0d0d;overflow:hidden;}
+.bc-hero img{display:block;width:100%;height:auto;image-rendering:pixelated;}
+.bc-hero .bc-plate{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+  font-weight:800;font-size:12px;letter-spacing:2px;color:var(--ice);
+  background:rgba(13,13,13,.72);padding:3px 12px;box-shadow:0 0 0 2px var(--black);white-space:nowrap;}
+.bc-guide,.bc-op{border:8px solid transparent;border-image:url('./Asset/Frame/ui/gf_bold.png') 8 stretch;background-color:var(--panel);box-shadow:0 0 0 3px var(--black);}
+.bc-guide{display:flex;align-items:center;gap:14px;padding:14px;}
+.bc-guide .bc-portrait{flex:0 0 auto;width:74px;height:74px;background:var(--panel-2);border:3px solid var(--ice-d);box-shadow:0 0 0 2px var(--black);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;}
+.bc-guide .bc-portrait img{height:auto;animation:bob 1.6s steps(2) infinite;}
+.bc-guide .bc-gtext{flex:1;min-width:0;}
+.bc-guide .bc-gname{font-weight:800;font-size:18px;color:var(--ice);}
+.bc-guide .bc-grole{font-size:12px;color:var(--gold);margin:2px 0 8px;}
+.bc-guide .bc-dests{display:flex;flex-wrap:wrap;gap:6px;}
+.bc-sec{display:flex;align-items:center;gap:8px;color:var(--gold);font-weight:800;font-size:14px;letter-spacing:1px;margin:6px 2px -2px;}
+.bc-sec b{color:var(--ice);}
+.bc-op{display:flex;flex-wrap:wrap;gap:8px;padding:14px;}
+.bc-roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:14px;}
+.bc-member{display:flex;flex-direction:column;gap:9px;padding:12px;border:7px solid transparent;border-image:url('./Asset/Frame/ui/gf_thin.png') 7 stretch;background:var(--panel);box-shadow:0 0 0 3px var(--black);}
+.bc-m-top{display:flex;align-items:center;gap:10px;}
+.bc-m-ava{width:42px;height:42px;background:var(--panel-2);border:2px solid var(--ice-d);box-shadow:0 0 0 2px var(--black);display:flex;align-items:flex-end;justify-content:center;flex:0 0 auto;}
+.bc-m-ava img{height:34px;width:auto;}
+.bc-m-name{flex:1;font-weight:800;font-size:16px;color:var(--white);}
+.bc-m-lead{font-size:10px;color:var(--gold);border:2px solid var(--gold-d);padding:1px 5px;}
+.bc-m-mini{overflow:hidden;border:2px solid var(--line);box-shadow:0 0 0 2px var(--black);align-self:center;}
+.bc-comment{width:100%;font-family:'Stardust',monospace;font-size:12px;color:var(--white);background:var(--panel-2);border:2px solid var(--line);padding:7px 9px;outline:none;}
+.bc-comment:focus{border-color:var(--ice);}
+.bc-m-deco{font-family:'Stardust';font-weight:800;font-size:12px;color:var(--ice);background:var(--panel-2);border:2px solid var(--ice-d);box-shadow:0 0 0 2px var(--black);padding:7px;cursor:pointer;}
+.bc-m-deco:hover{background:var(--water-dd);color:var(--pure);}
+.bc-foot{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px;}
+
+@media(max-width:720px){
+  .guide-grid{grid-template-columns:repeat(2,1fr);}
+  .dock-portrait{width:64px;height:64px;}
+  .tl-time{flex-basis:44px;font-size:11px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <button class="backbtn" id="backbtn" data-t="back"></button>
+
+  <!-- ============ TITLE ============ -->
+  <section class="screen active" id="title">
+    <div id="scene">
+      <div class="stars" id="stars"></div>
+    </div>
+    <div class="titlewrap">
+      <img class="kotitle" src="./Asset/title_ko.png" alt="눈길원정대">
+
+      <div class="entitle">SNOW QUEST</div>
+      <div class="tagline" data-t="tagline"></div>
+      <div class="start-row">
+        <div class="start-btns">
+          <button class="btn gold" id="startBtn" data-t="start"></button>
+          <button class="btn ghost" id="baseBtn" data-t="base_btn" style="display:none"></button>
+        </div>
+        <div class="press" data-t="press"></div>
+      </div>
+    </div>
+    <div class="credit">Chroma Noir Arctic · PF스타더스트 3.0 · made for winter trips</div>
+  </section>
+
+  <!-- ============ GUIDE SELECT ============ -->
+  <section class="screen" id="guide">
+    <div class="scr-head">
+      <div class="scr-kick" data-t="g_kick"></div>
+      <div class="scr-title" data-t="g_title"></div>
+      <div class="scr-sub" data-t="g_sub"></div>
+    </div>
+    <div class="guide-grid" id="guideGrid"></div>
+    <div style="margin-top:26px;z-index:20;">
+      <button class="btn" id="guideNext" disabled data-t="g_next"></button>
+    </div>
+  </section>
+
+  <!-- ============ PARTY ============ -->
+  <section class="screen" id="party">
+    <div class="scr-head">
+      <div class="scr-kick" data-t="p_kick"></div>
+      <div class="scr-title" data-t="p_title"></div>
+    </div>
+    <div class="party-box panel" style="padding:22px;">
+      <div class="party-add">
+        <input class="inp" id="userInput" maxlength="10" data-ph="p_ph">
+        <button class="btn" id="userAdd" data-t="p_add"></button>
+      </div>
+      <div class="user-list" id="userList"></div>
+      <div class="party-foot">
+        <div class="party-count"><span data-t="p_count"></span> <b id="userCount">0</b><span data-t="p_people"></span></div>
+        <button class="btn gold" id="partyNext" disabled data-t="p_next"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MAP ============ -->
+  <section class="screen" id="map">
+    <div class="scr-head">
+      <div class="scr-kick" data-t="m_kick"></div>
+      <div class="scr-title" data-t="m_title"></div>
+    </div>
+    <!-- departure board (train-destination 전광판) -->
+    <div class="depboard">
+      <div class="dep-head">
+        <span class="dep-led"></span>
+        <span class="dep-title" data-t="dep_title"></span>
+        <span class="dep-count" id="depCount"></span>
+      </div>
+      <div class="dep-track" id="depTrack"></div>
+    </div>
+    <div class="map-stage">
+      <div class="map-frame panel">
+        <canvas id="japan"></canvas>
+        <div class="markers" id="markers">
+          <svg id="routeSvg" class="route-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          <div class="rpop" id="rpop"></div>
+        </div>
+      </div>
+      <div class="map-legend" data-t="m_legend"></div>
+      <div class="map-foot">
+        <button class="btn-mini" id="routeReset" data-t="m_reset" disabled></button>
+        <button class="btn gold" id="mapNext" disabled></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SURVEY ============ -->
+  <section class="screen" id="survey">
+    <div class="survey-box">
+      <div class="steps" id="steps"></div>
+      <div class="qcard" id="qcard"></div>
+      <div class="survey-foot">
+        <button class="btn ghost" id="qPrev" data-t="s_prev"></button>
+        <button class="btn gold" id="qNext" data-t="s_next"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LOADING ============ -->
+  <section class="screen" id="loading">
+    <div class="load-box">
+      <div class="load-npc"><img id="loadNpc" class="spr"></div>
+      <div class="load-title" data-t="l_title"></div>
+      <div class="load-line" id="loadLine"></div>
+      <div class="bar"><div class="fill" id="loadFill"></div><div class="pct" id="loadPct">0%</div></div>
+    </div>
+  </section>
+
+  <!-- ============ PLAN ============ -->
+  <section class="screen" id="plan">
+    <div class="plan-wrap" id="planWrap"></div>
+  </section>
+
+  <!-- ============ CAMP (deco) ============ -->
+  <section class="screen" id="camp">
+    <div class="scr-head">
+      <div class="scr-kick" data-t="camp_kick"></div>
+      <div class="scr-title" data-t="camp_title"></div>
+    </div>
+    <div class="camp-tabs" id="campTabs"></div>
+    <div class="camp-main" id="campMain"></div>
+  </section>
+
+  <!-- ============ BASE CAMP (hub) ============ -->
+  <section class="screen" id="basecamp">
+    <div class="scr-head">
+      <div class="scr-kick" data-t="base_kick"></div>
+      <div class="scr-title" data-t="base_title"></div>
+    </div>
+    <div class="bc-wrap" id="baseWrap"></div>
+  </section>
+
+  <!-- NPC DOCK -->
+  <div id="dock">
+    <div class="dock-inner">
+      <div class="dock-portrait"><img id="dockImg" class="spr"></div>
+      <div class="dock-bubble">
+        <div class="dock-name" id="dockName"></div>
+        <div class="dock-text" id="dockText"></div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="snow"></canvas>
+</div>
+
+<script>
+"use strict";
+
+/* ===================== STATE ===================== */
+var S = {
+  lang:'ko',
+  npc:null,
+  users:[],
+  dest:'hakodate',
+  dests:[],
+  route:[],
+  survey:{ relation:null, purposes:[], budget:40000, visited:null, nights:2, month:null, transit:null, pace:null }
+};
+var SPR='./sprites/';
+
+/* ===================== NPCS ===================== */
+var NPCS = [
+  { id:'boro', img:'npc_ghost.png', w:58, gh:78,
+    name:{ko:'보로',en:'Boro'},
+    role:{ko:'감성 길잡이',en:'Cozy Guide'},
+    tag:{ko:'야경·힐링',en:'Views·Chill'},
+    desc:{ko:'느긋하고 다정한 눈의 정령.\n예쁜 풍경이라면 다 알아.',en:'A gentle snow spirit.\nKnows every pretty view.'} },
+  { id:'nova', img:'npc_frost.png', w:30, gh:78,
+    name:{ko:'노바',en:'Nova'},
+    role:{ko:'알뜰 길잡이',en:'Thrift Guide'},
+    tag:{ko:'예산·효율',en:'Budget·Plan'},
+    desc:{ko:'똑부러지는 서리 기사.\n1엔도 허투루 안 써!',en:'A sharp frost knight.\nNever wastes a single yen!'} },
+  { id:'koko', img:'npc_imp.png', w:42, gh:58,
+    name:{ko:'코코',en:'Koko'},
+    role:{ko:'먹보 길잡이',en:'Foodie Guide'},
+    tag:{ko:'맛집·먹방',en:'Food·Eats'},
+    desc:{ko:'장난꾸러기 꼬마 도깨비.\n맛있는 건 절대 못 참아.',en:'A mischievous little imp.\nLives for tasty bites.'} },
+  { id:'popo', img:'npc_penguin.png', w:34, gh:62,
+    name:{ko:'포포',en:'Popo'},
+    role:{ko:'활동 길잡이',en:'Active Guide'},
+    tag:{ko:'액티비티·사진',en:'Active·Photo'},
+    desc:{ko:'에너지 넘치는 눈펭귄.\n같이 뛰어놀자, 응?',en:'A bouncy snow penguin.\nLet’s go play, okay?'} }
+];
+function npcById(id){ for(var i=0;i<NPCS.length;i++) if(NPCS[i].id===id) return NPCS[i]; return NPCS[0]; }
+
+/* ===================== I18N (UI) ===================== */
+var T = {
+  tagline:{ko:'추운 건 질색이지만, 너랑 가는 겨울은 좋아.',en:'I hate the cold — but winter with you? Love it.'},
+  start:{ko:'처음부터',en:'New Game'},
+  base_btn:{ko:'베이스캠프로',en:'To Base Camp'},
+  base_kick:{ko:'겨울 모험대 · 작전 본부',en:'Winter Expedition · HQ'},
+  base_title:{ko:'베이스캠프',en:'Base Camp'},
+  base_guide:{ko:'우리 길잡이',en:'Our Guide'},
+  base_dest:{ko:'목적지',en:'Destinations'},
+  base_op:{ko:'여행 작전 회의',en:'Trip Briefing'},
+  base_roster:{ko:'원정대원',en:'Expedition Crew'},
+  base_resume:{ko:'모험 이어가기',en:'Resume Adventure'},
+  base_plan:{ko:'여행 플랜 보기',en:'View Plan'},
+  base_deco:{ko:'캠프 꾸미기',en:'Decorate'},
+  base_cmt_ph:{ko:'이 여행에 한마디…',en:'A word about this trip…'},
+  press:{ko:'▶ 눌러서 모험 시작',en:'▶ PRESS TO BEGIN'},
+
+  g_kick:{ko:'STEP 1 · 길잡이 선택',en:'STEP 1 · PICK A GUIDE'},
+  g_title:{ko:'누구랑 떠날래?',en:'Who’s your guide?'},
+  g_sub:{ko:'함께 여행을 안내해 줄 친구를 골라봐.',en:'Choose a buddy to guide your trip.'},
+  g_next:{ko:'이 친구로 정했어',en:'Pick this one'},
+
+  p_kick:{ko:'STEP 2 · 일행 추가',en:'STEP 2 · ADD PARTY'},
+  p_title:{ko:'같이 갈 사람을 적어줘',en:'Who’s coming along?'},
+  p_ph:{ko:'이름을 입력해',en:'Enter a name'},
+  p_add:{ko:'추가',en:'Add'},
+  p_count:{ko:'우리 일행은 총',en:'Party of'},
+  p_people:{ko:'명',en:''},
+  p_next:{ko:'지도로 가기',en:'To the map'},
+
+  m_kick:{ko:'STEP 3 · 목적지',en:'STEP 3 · DESTINATION'},
+  m_title:{ko:'어디로 떠날까?',en:'Where to?'},
+  m_legend:{ko:'지역을 누르면 소개가 떠. <b>행선지에 추가</b>하면 아래 <b>전광판</b>에 순서대로 등록되고 지도에 루트가 그려져!',en:'Tap a region for details. <b>Add it</b> and it boards the sign below in order — the route draws on the map!'},
+  m_diff:{ko:'여행 난이도',en:'Difficulty'},
+  m_close:{ko:'닫기',en:'Close'},
+  m_next:{ko:'다음',en:'Next'},
+  m_none:{ko:'행선지를 먼저 추가해줘',en:'Add a destination first'},
+  m_reset:{ko:'↺ 경로 리셋',en:'↺ Reset route'},
+  m_addstop:{ko:'＋ 행선지에 추가',en:'＋ Add to board'},
+  m_startstop:{ko:'▶ 여기서 출발',en:'▶ Depart from here'},
+  m_again:{ko:'＋ 다시 경유',en:'＋ Stop again'},
+  m_start:{ko:'출발지',en:'Start'},
+  m_stopn:{ko:'번째 경유지',en: ' stop'},
+  dep_title:{ko:'행선지 · DESTINATIONS',en:'DESTINATIONS · 行先'},
+
+  s_prev:{ko:'‹ 이전',en:'‹ Back'},
+  s_next:{ko:'다음 ›',en:'Next ›'},
+  s_done:{ko:'플랜 만들기',en:'Make my plan'},
+
+  l_title:{ko:'최적의 루트를 짜는 중...',en:'Plotting the best route...'},
+
+  plan_kick:{ko:'완성! · 너만의 겨울 루트',en:'Done! · Your winter route'},
+  plan_total:{ko:'예상 경비 (현지 입장료·식비·교통)',en:'Est. cost (entry·food·local transit)'},
+  reroll:{ko:'다시 짜줘',en:'Re-roll'},
+  restart:{ko:'처음으로',en:'Start over'},
+  tips_h:{ko:'길잡이의 꿀팁',en:'Guide’s tips'},
+  back:{ko:'‹ 뒤로',en:'‹ Back'},
+
+  camp_btn:{ko:'캠프 꾸미기',en:'Decorate Camp'},
+  camp_kick:{ko:'보너스 · 우리들의 눈밭',en:'Bonus · Our snowfield'},
+  camp_title:{ko:'각자의 캠프를 꾸며봐',en:'Decorate each camp'}
+};
+function L(o){ return (o&&o[S.lang]!=null)?o[S.lang]:(o?o.ko:''); }
+function tr(k){ return L(T[k]); }
+
+/* ===================== SAVE / LOAD ===================== */
+var SAVE_KEY='snowquest_save_v1';
+var FLOW_SCREENS=['guide','party','map','survey','plan'];
+function saveState(scr){
+  try{
+    scr=scr||current;
+    var prev=loadSave();
+    var flow=(FLOW_SCREENS.indexOf(scr)>=0)?scr:(prev&&prev.flow?prev.flow:null);
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      lang:S.lang, npc:S.npc, users:S.users, dest:S.dest, dests:S.dests, route:S.route, survey:S.survey,
+      plan:PLAN, screen:scr, flow:flow
+    }));
+  }catch(e){}
+}
+function loadSave(){
+  try{ var raw=localStorage.getItem(SAVE_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+}
+function hasSave(){
+  var s=loadSave();
+  return !!(s && s.screen && s.screen!=='title');
+}
+function refreshTitle(){
+  var s=loadSave();
+  var bb=document.getElementById('baseBtn');
+  if(bb) bb.style.display = (s && s.users && s.users.length)? 'inline-block':'none';
+}
+
+/* ===================== SCREEN NAV ===================== */
+var current='title';
+function show(id){
+  var cur=document.getElementById(current);
+  var nxt=document.getElementById(id);
+  if(cur){ cur.classList.remove('shown'); }
+  setTimeout(function(){
+    if(cur) cur.classList.remove('active');
+    nxt.classList.add('active');
+    void nxt.offsetWidth;
+    nxt.classList.add('shown');
+    current=id;
+    onEnter(id);
+  }, cur?260:0);
+}
+function onEnter(id){
+  var dock=document.getElementById('dock');
+  var withDock = (id==='party'||id==='map'||id==='survey'||id==='plan'||id==='camp'||id==='basecamp');
+  dock.classList.toggle('show', withDock && !!S.npc);
+  document.getElementById('backbtn').classList.toggle('show', id!=='title'&&id!=='loading'&&id!=='plan');
+  if(id==='party') enterParty();
+  if(id==='map') enterMap();
+  if(id==='survey') enterSurvey();
+  if(id==='plan') enterPlan();
+  if(id==='camp') enterCamp();
+  if(id==='basecamp') enterBasecamp();
+  if(id==='title') refreshTitle();
+  if(id!=='loading') saveState(id);
+}
+document.getElementById('backbtn').onclick=function(){
+  if(current==='guide') show('title');
+  else if(current==='party') show('guide');
+  else if(current==='map') show('party');
+  else if(current==='basecamp') show('title');
+  else if(current==='camp') show(campReturn||'title');
+  else if(current==='survey'){
+    if(surveyStep>0){ surveyStep--; renderSurvey(); }
+    else show('map');
+  }
+};
+
+/* ===================== TITLE SCENE (snowy night sky only) ===================== */
+(function buildScene(){
+  var st=document.getElementById('stars'), html='';
+  for(var i=0;i<160;i++){
+    html+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;animation-delay:'+(Math.random()*3).toFixed(2)+'s"></div>';
+  }
+  st.innerHTML=html;
+})();
+
+/* ===================== SNOW CANVAS ===================== */
+(function snow(){
+  var cv=document.getElementById('snow'), ctx=cv.getContext('2d');
+  var flakes=[];
+  function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight;
+    flakes=[]; var n=Math.round(cv.width*cv.height/16000);
+    for(var i=0;i<n;i++) flakes.push({x:Math.random()*cv.width,y:Math.random()*cv.height,s:1+Math.random()*2.5,vy:0.4+Math.random()*1.4,vx:-0.4+Math.random()*0.8,o:0.3+Math.random()*0.6});
+  }
+  resize(); window.addEventListener('resize',resize);
+  function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(var i=0;i<flakes.length;i++){ var f=flakes[i];
+      f.y+=f.vy; f.x+=f.vx+Math.sin(f.y*0.01)*0.3;
+      if(f.y>cv.height){ f.y=-4; f.x=Math.random()*cv.width; }
+      if(f.x>cv.width) f.x=0; if(f.x<0) f.x=cv.width;
+      ctx.fillStyle='rgba(217,217,217,'+f.o+')';
+      var s=Math.round(f.s); ctx.fillRect(Math.round(f.x),Math.round(f.y),s,s);
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ===================== DOCK / DIALOG ===================== */
+var typeTimer=null;
+function setDock(){
+  if(!S.npc) return;
+  var n=npcById(S.npc);
+  var img=document.getElementById('dockImg');
+  img.src=SPR+n.img; img.style.width=n.w+'px';
+  document.getElementById('dockName').textContent=L(n.name);
+}
+function say(text){
+  var el=document.getElementById('dockText');
+  if(typeTimer){ clearInterval(typeTimer); }
+  var i=0; el.innerHTML='';
+  typeTimer=setInterval(function(){
+    if(i<=text.length){
+      el.innerHTML=text.slice(0,i)+'<span class="cur">█</span>';
+      i++;
+    } else { el.innerHTML=text; clearInterval(typeTimer); }
+  },22);
+}
+
+/* ===================== GUIDE SELECT ===================== */
+function buildGuides(){
+  var g=document.getElementById('guideGrid'); g.innerHTML='';
+  NPCS.forEach(function(n){
+    var card=document.createElement('div');
+    card.className='gcard'+(S.npc===n.id?' sel':'');
+    card.innerHTML=
+      '<div class="portrait"><img class="spr" src="'+SPR+n.img+'" style="height:'+(n.gh)+'px;width:auto"></div>'+
+      '<div class="gname">'+L(n.name)+'</div>'+
+      '<div class="grole">'+L(n.role)+'</div>'+
+      '<div class="gdesc">'+L(n.desc).replace(/\n/g,'<br>')+'</div>'+
+      '<div class="gtag">'+L(n.tag)+'</div>';
+    card.onclick=function(){
+      S.npc=n.id; buildGuides();
+      document.getElementById('guideNext').disabled=false;
+      setDock();
+    };
+    g.appendChild(card);
+  });
+}
+document.getElementById('guideNext').onclick=function(){
+  if(!S.npc) return;
+  setDock();
+  show('party');
+};
+
+/* ===================== PARTY ===================== */
+var AVA=['npc_imp.png','npc_penguin.png','npc_frost.png','npc_ghost.png'];
+function enterParty(){
+  setDock();
+  var n=npcById(S.npc);
+  var greet={ko:L(n.name)+'(이)야! 같이 갈 사람들 이름을 적어줘. 너부터 먼저!',en:'I’m '+L(n.name)+'! Add everyone coming — you first!'};
+  say(L(greet));
+  renderUsers();
+}
+function addUser(){
+  var inp=document.getElementById('userInput');
+  var v=inp.value.trim();
+  if(!v) return;
+  if(S.users.length>=12) return;
+  S.users.push({name:v, ava:AVA[S.users.length%AVA.length]});
+  inp.value=''; inp.focus();
+  renderUsers();
+  if(S.users.length===1){ say(S.lang==='ko'?'좋아, 너가 대장이네! 더 있으면 계속 추가해.':'Nice, you’re the leader! Add more if you want.'); }
+}
+function renderUsers(){
+  var list=document.getElementById('userList'); list.innerHTML='';
+  S.users.forEach(function(u,idx){
+    var row=document.createElement('div'); row.className='user-row';
+    row.innerHTML=
+      '<div class="uava"><img class="spr" src="./Asset/el_snowman.png"></div>'+
+      '<div class="uname">'+u.name+'</div>'+
+      (idx===0?'<div class="ulead">'+(S.lang==='ko'?'대장':'LEAD')+'</div>':'')+
+      '<div class="udel" data-i="'+idx+'">✕</div>';
+    row.querySelector('.udel').onclick=function(){
+      S.users.splice(parseInt(this.getAttribute('data-i')),1); renderUsers();
+    };
+    list.appendChild(row);
+  });
+  document.getElementById('userCount').textContent=S.users.length;
+  document.getElementById('partyNext').disabled=S.users.length<1;
+}
+document.getElementById('userAdd').onclick=addUser;
+document.getElementById('userInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter' && !e.isComposing && e.keyCode!==229) addUser();   // ignore Enter that only commits the Korean IME
+});
+document.getElementById('partyNext').onclick=function(){ show('map'); };
+
+/* ===================== HOKKAIDO MAP ===================== */
+var REGIONS=[
+  {id:'wakkanai', x:0.32,y:0.11, diff:5, ko:'왓카나이', en:'Wakkanai',
+    dko:'일본 최북단 항구 도시. 바람이 거세고 멀어서 큰맘 먹고 가는 곳이야.',
+    den:'Japan’s northernmost port — windy, remote, a real expedition.'},
+  {id:'shiretoko', x:0.875,y:0.27, diff:5, ko:'시레토코', en:'Shiretoko',
+    dko:'세계자연유산 원시림. 겨울 유빙이 장관이지만 오지라 난이도 최상.',
+    den:'A UNESCO wilderness — winter drift ice is stunning, but very remote.'},
+  {id:'biei', x:0.52,y:0.37, diff:3, ko:'비에이', en:'Biei',
+    dko:'언덕 풍경과 파란 연못으로 유명해. 후라노와 묶어 가면 좋아.',
+    den:'Rolling hills and the Blue Pond — pair it with Furano.'},
+  {id:'furano', x:0.50,y:0.46, diff:3, ko:'후라노', en:'Furano',
+    dko:'설경과 라벤더의 고장. 겨울엔 스키 천국이지만 이동이 좀 멀어.',
+    den:'Snow fields and lavender — a ski paradise, but a bit far.'},
+  {id:'sapporo', x:0.34,y:0.55, diff:1, ko:'삿포로', en:'Sapporo',
+    dko:'홋카이도의 중심 도시. 눈축제·맛집·교통이 편해 첫 여행지로 딱이야.',
+    den:'Hokkaido’s hub — snow festival, food, easy transit. Great for first-timers.'},
+  {id:'otaru', x:0.29,y:0.47, diff:2, ko:'오타루', en:'Otaru',
+    dko:'운하와 오르골당이 예쁜 항구 도시. 삿포로에서 당일치기로 좋아.',
+    den:'A pretty canal town — an easy day trip from Sapporo.'},
+  {id:'hakodate', x:0.11,y:0.89, diff:2, ko:'하코다테', en:'Hakodate',
+    dko:'세계적인 야경과 아침시장. 남쪽이라 접근성이 좋아.',
+    den:'World-famous night view and morning market — easy to reach in the south.'}
+];
+function regionById(id){ for(var i=0;i<REGIONS.length;i++) if(REGIONS[i].id===id) return REGIONS[i]; return null; }
+/* Hokkaido silhouette traced from the reference mosaic map (Examples/map.png). */
+var HOKKAIDO_BMP=[
+  "           #                          ",
+  "         #####                        ",
+  "         ######                       ",
+  "         #######                      ",
+  "          #######                     ",
+  "          #######                     ",
+  "           #######                    ",
+  "           ########                   ",
+  "           ##########             #   ",
+  "           ############          ##   ",
+  "          ##############         ##   ",
+  "          ##################    ##    ",
+  "          ########################    ",
+  "          ########################    ",
+  "          ########################    ",
+  "         ##########################   ",
+  "        ############################# ",
+  "         #############################",
+  "         ############################ ",
+  "         ##########################   ",
+  "   ##    #########################    ",
+  "  ##############################      ",
+  "  ##########################          ",
+  "   ########################           ",
+  "   #######################            ",
+  " ########################             ",
+  " #######################              ",
+  "###########   ##########              ",
+  "####   ###      ########              ",
+  "####    #         ######              ",
+  "#####               ####              ",
+  "######                                ",
+  " ######                               ",
+  " ########                             ",
+  " ########                             ",
+  " #####                                ",
+  " ####                                 ",
+  " ###                                  "
+];
+var BMP_W=HOKKAIDO_BMP[0].length, BMP_H=HOKKAIDO_BMP.length;
+function buildHokkaido(){
+  var grid=[];
+  for(var r=0;r<BMP_H;r++){
+    var row=[], s=HOKKAIDO_BMP[r];
+    for(var c=0;c<BMP_W;c++) row.push(s.charAt(c)==='#'?1:0);
+    grid.push(row);
+  }
+  return grid;
+}
+var mapBuilt=false;
+function enterMap(){
+  setDock();
+  say(S.lang==='ko'?'홋카이도야! 가고 싶은 곳을 마음껏 골라봐. 지역을 누르면 소개해줄게.':'Hokkaido! Pick all the spots you want — tap one for details.');
+  if(!mapBuilt){
+    mapBuilt=true;
+    var W=BMP_W, H=BMP_H;
+    var stageW=Math.min(360, window.innerWidth-80);
+    var px=Math.max(6,Math.floor(stageW/W));
+    var grid=buildHokkaido();
+    var cv=document.getElementById('japan');
+    cv.width=W*px; cv.height=H*px;
+    cv.style.width=(W*px)+'px'; cv.style.height=(H*px)+'px';
+    var ctx=cv.getContext('2d');
+    var gap=px>=9?1:0;                /* tile gap → mosaic look like the reference */
+    for(var r=0;r<H;r++)for(var c=0;c<W;c++){
+      if(grid[r][c]){
+        var north=(r>0?grid[r-1][c]:0);
+        /* deterministic per-tile shade variation for the dotted-mosaic feel */
+        var h=((c*73+r*131)%7);
+        var base = north ? ['#2c4a63','#274359','#315169'][h%3]
+                         : ['#4dcced','#3ab6dd','#5fd6f2','#46c4e6'][h%4];
+        ctx.fillStyle=base;
+        ctx.fillRect(c*px,r*px,px-gap,px-gap);
+        ctx.fillStyle='rgba(13,13,13,0.12)';
+        ctx.fillRect(c*px,r*px+Math.floor(px*0.62),px-gap,Math.ceil(px*0.38)-gap);
+      }
+    }
+    var mk=document.getElementById('markers');
+    mk.style.width=(W*px)+'px'; mk.style.height=(H*px)+'px';
+  }
+  hidePop();
+  renderMarkers();
+  drawRoute();
+  updateBoard();
+  updateMapFoot();
+}
+/* keep S.dests (unique, first-visit order) derived from the ordered route */
+function syncDests(){
+  var seen={}, out=[];
+  S.route.forEach(function(id){ if(!seen[id]){ seen[id]=1; out.push(id); } });
+  S.dests=out;
+}
+function afterRoute(){ syncDests(); renderMarkers(); drawRoute(); updateBoard(); updateMapFoot(); saveState('map'); }
+function renderMarkers(){
+  var mk=document.getElementById('markers');
+  var olds=mk.querySelectorAll('.mk'); for(var i=0;i<olds.length;i++) olds[i].remove();
+  REGIONS.forEach(function(rg){
+    var orders=[]; S.route.forEach(function(id,idx){ if(id===rg.id) orders.push(idx+1); });
+    var inRoute=orders.length>0, isStart=orders.indexOf(1)>=0;
+    var el=document.createElement('div');
+    el.className='mk'+(inRoute?' sel':'')+(isStart?' start':'')+(popFor===rg.id?' active':'');
+    el.setAttribute('data-id', rg.id);
+    el.style.left=(rg.x*100)+'%'; el.style.top=(rg.y*100)+'%';
+    var badge=inRoute?'<div class="mk-num">'+orders.join('·')+'</div>':'';
+    el.innerHTML='<div class="dot"></div>'+badge+'<div class="mlabel">'+(S.lang==='ko'?rg.ko:rg.en)+'</div>';
+    el.onclick=function(e){ e.stopPropagation(); openPop(rg); };
+    mk.appendChild(el);
+  });
+}
+/* draw the ordered route as a connected line with direction arrows */
+function drawRoute(){
+  var svg=document.getElementById('routeSvg'); if(!svg) return;
+  var pts=[];
+  S.route.forEach(function(id){ var r=regionById(id); if(r) pts.push([r.x*100, r.y*100]); });
+  if(pts.length<2){ svg.innerHTML=''; return; }
+  var poly=pts.map(function(p){ return p[0].toFixed(2)+','+p[1].toFixed(2); }).join(' ');
+  var arrows='';
+  for(var i=0;i<pts.length-1;i++){
+    var a=pts[i], b=pts[i+1];
+    var mx=(a[0]+b[0])/2, my=(a[1]+b[1])/2;
+    var ang=Math.atan2(b[1]-a[1], b[0]-a[0]), s=2.6;
+    var p1=(mx+Math.cos(ang)*s).toFixed(2)+','+(my+Math.sin(ang)*s).toFixed(2);
+    var p2=(mx+Math.cos(ang+2.5)*s).toFixed(2)+','+(my+Math.sin(ang+2.5)*s).toFixed(2);
+    var p3=(mx+Math.cos(ang-2.5)*s).toFixed(2)+','+(my+Math.sin(ang-2.5)*s).toFixed(2);
+    arrows+='<polygon class="route-arrow" points="'+p1+' '+p2+' '+p3+'"/>';
+  }
+  svg.innerHTML='<polyline class="route-line-glow" points="'+poly+'"/>'+
+                '<polyline class="route-line" points="'+poly+'"/>'+arrows;
+}
+/* commit a region to the route (from the popup button) — popup then closes */
+function addStop(id){
+  S.route.push(id);
+  afterRoute();
+  var rg=regionById(id), ko=S.lang==='ko', n=S.route.length, loop=(id===S.route[0] && n>1);
+  if(n===1) say(ko?(rg.ko+'에서 출발! 전광판에 행선지를 이어서 추가해봐.'):('Departing from '+rg.en+'! Add more stops to the board.'));
+  else if(loop) say(ko?(rg.ko+'(으)로 돌아오는 루트 완성! 멋진걸.'):('Looping back to '+rg.en+' — nice route!'));
+  else say(ko?(rg.ko+' 행선지 추가! ('+n+'번째)'):(rg.en+' added! (stop '+n+')'));
+}
+/* remove a single stop from the board (✕ on a flap card) */
+function removeStop(idx){
+  if(idx<0||idx>=S.route.length) return;
+  var removed=S.route.splice(idx,1)[0];
+  afterRoute();
+  var rr=regionById(removed), ko=S.lang==='ko';
+  say(ko?((rr?rr.ko:'')+' 행선지를 뺐어.'):('Removed '+(rr?rr.en:'')+'.'));
+}
+function resetRoute(){
+  if(!S.route.length) return;
+  S.route=[]; afterRoute(); hidePop();
+  say(S.lang==='ko'?'전광판을 모두 비웠어. 출발지부터 다시 골라봐!':'Board cleared — pick a start again!');
+}
+/* render the departure board (전광판) */
+function updateBoard(){
+  var track=document.getElementById('depTrack'), cnt=document.getElementById('depCount');
+  if(!track) return;
+  var ko=S.lang==='ko', route=S.route;
+  if(!route.length){
+    track.innerHTML='<div class="dep-empty">'+(ko?'행선지가 비어 있어 · 지도에서 골라 추가':'Empty · tap the map to add')+'</div>';
+    if(cnt) cnt.textContent='';
+    return;
+  }
+  var html='';
+  route.forEach(function(id,idx){
+    var r=regionById(id); if(!r) return;
+    if(idx>0) html+='<div class="dep-arrow">▸</div>';
+    var isStart=idx===0;
+    var no=isStart?(ko?'출발':'DEP'):String(idx+1);
+    html+='<div class="dep-card'+(isStart?' start':'')+'" data-idx="'+idx+'">'+
+            '<div class="dep-x" data-idx="'+idx+'">✕</div>'+
+            '<div class="dep-no">'+no+'</div>'+
+            '<div class="dep-name">'+(ko?r.ko:r.en)+'</div>'+
+            '<div class="dep-sub">'+(ko?r.en:r.ko)+'</div>'+
+          '</div>';
+  });
+  track.innerHTML=html;
+  track.scrollLeft=track.scrollWidth;
+  if(cnt) cnt.textContent=ko?('경유 '+S.dests.length+'곳 · '+route.length+'정거장'):(S.dests.length+' spots · '+route.length+' stops');
+  track.querySelectorAll('.dep-x').forEach(function(x){
+    x.onclick=function(e){ e.stopPropagation(); removeStop(parseInt(x.getAttribute('data-idx'),10)); };
+  });
+  track.querySelectorAll('.dep-card').forEach(function(card){
+    card.onclick=function(){ var r=regionById(S.route[parseInt(card.getAttribute('data-idx'),10)]); if(r) openPop(r); };
+  });
+}
+var popFor=null;
+function openPop(rg){
+  if(!rg) return;
+  popFor=rg.id;
+  document.querySelectorAll('.mk.active').forEach(function(m){m.classList.remove('active');});
+  var mkEl=document.querySelector('.mk[data-id="'+rg.id+'"]'); if(mkEl) mkEl.classList.add('active');
+  var ko=S.lang==='ko';
+  var orders=[]; S.route.forEach(function(id,idx){ if(id===rg.id) orders.push(idx+1); });
+  var isStart=orders.indexOf(1)>=0, inRoute=orders.length>0;
+  var status='';
+  if(inRoute){
+    if(isStart && orders.length>1) status=ko?'출발지 · 도착지':'Start · End';
+    else if(isStart) status=tr('m_start');
+    else status=orders.join('·')+tr('m_stopn');
+  }
+  var btnLabel = !S.route.length ? tr('m_startstop') : (inRoute ? tr('m_again') : tr('m_addstop'));
+  var stars=''; for(var i=1;i<=5;i++) stars+='<span class="'+(i<=rg.diff?'on':'off')+'">★</span>';
+  var pop=document.getElementById('rpop');
+  pop.innerHTML=
+    '<div class="rpop-x">✕</div>'+
+    '<div class="rpop-name">'+(ko?rg.ko:rg.en)+'</div>'+
+    (status?'<div class="rpop-route'+(isStart?' start':'')+'">'+status+'</div>':'')+
+    '<div class="rpop-diff">'+tr('m_diff')+'</div>'+
+    '<div class="rpop-stars">'+stars+'</div>'+
+    '<div class="rpop-desc">'+(ko?rg.dko:rg.den)+'</div>'+
+    '<button class="rpop-btn on">'+btnLabel+'</button>';
+  pop.style.left=(rg.x*100)+'%'; pop.style.top=(rg.y*100)+'%';
+  pop.classList.toggle('below', rg.y<0.48);
+  pop.classList.add('show');
+  pop.querySelector('.rpop-x').onclick=function(e){ e.stopPropagation(); hidePop(); };
+  pop.querySelector('.rpop-btn').onclick=function(e){ e.stopPropagation(); addStop(rg.id); hidePop(); };
+}
+function hidePop(){
+  var pop=document.getElementById('rpop'); pop.classList.remove('show');
+  document.querySelectorAll('.mk.active').forEach(function(m){m.classList.remove('active');});
+  popFor=null;
+}
+function updateMapFoot(){
+  var uniq=S.dests.length, n=S.route.length;
+  var rb=document.getElementById('routeReset'); if(rb) rb.disabled=n<1;
+  var btn=document.getElementById('mapNext');
+  btn.disabled = uniq<1;
+  btn.textContent = uniq? (tr('m_next')+' ›') : tr('m_none');
+}
+document.getElementById('mapNext').onclick=function(){
+  if(!S.dests.length) return;
+  S.dest=S.dests[0];
+  var ko=S.lang==='ko';
+  var names=S.route.map(function(id){var r=regionById(id);return r?(ko?r.ko:r.en):id;}).join(' ▸ ');
+  say(ko?('좋아 — '+names+'! 이 루트로 짜볼게. 몇 가지만 물어볼게.'):('Nice — '+names+'! Just a few questions.'));
+  setTimeout(function(){ show('survey'); }, 600);
+};
+document.getElementById('routeReset').onclick=function(e){ e.stopPropagation(); resetRoute(); };
+document.getElementById('markers').addEventListener('click', function(e){ if(e.target===this) hidePop(); });
+
+/* ===================== SURVEY ===================== */
+var PURPOSES=[
+  {id:'heal', ko:'힐링', en:'Chill'},
+  {id:'food', ko:'맛집', en:'Food'},
+  {id:'view', ko:'야경·사진', en:'Views'},
+  {id:'shop', ko:'쇼핑', en:'Shopping'},
+  {id:'onsen',ko:'온천', en:'Onsen'},
+  {id:'active',ko:'액티비티·스키', en:'Activity'},
+  {id:'culture',ko:'문화·역사', en:'History'}
+];
+var surveyStep=0;
+function surveySteps(){
+  var arr=[];
+  if(S.users.length>1) arr.push('relation');
+  arr.push('purposes','budget','visited','nights','month','transit','pace');
+  return arr;
+}
+function enterSurvey(){ surveyStep=0; renderSurvey(); }
+function npcLineFor(step){
+  var lines={
+    relation:{ko:'다들 무슨 사이야? 분위기 맞춰서 짜줄게.',en:'How do you all know each other? I’ll match the vibe.'},
+    purposes:{ko:'이번 여행, 어떤 느낌이면 좋겠어? 여러 개 골라도 돼!',en:'What should this trip feel like? Pick a few!'},
+    budget:{ko:'현지에서 쓸 수 있는 예산은 얼마야? (엔)',en:'How much can you spend on-site? (in yen)'},
+    visited:{ko:destName()+'는 처음이야, 아님 또 온 거야?',en:'First time in '+destName()+', or a return trip?'},
+    nights:{ko:'몇 박 며칠로 다녀올 거야?',en:'How many nights are we staying?'},
+    month:{ko:'언제 떠날래? 겨울에만 갈 수 있어!',en:'When are we going? Winter only!'},
+    transit:{ko:'현지에선 어떻게 돌아다닐 거야?',en:'How will you get around there?'},
+    pace:{ko:'여행 속도는? 알차게 vs 느긋하게.',en:'Your pace? Packed vs relaxed.'}
+  };
+  return L(lines[step]);
+}
+function renderSurvey(){
+  setDock();
+  var steps=surveySteps();
+  var step=steps[surveyStep];
+  say(npcLineFor(step));
+  var sd=document.getElementById('steps'); sd.innerHTML='';
+  for(var i=0;i<steps.length;i++){ var c=i<surveyStep?'done':(i===surveyStep?'on':''); sd.innerHTML+='<i class="'+c+'"></i>'; }
+  var qc=document.getElementById('qcard');
+  var num=(surveyStep+1)+' / '+steps.length;
+  var body='';
+  if(step==='relation'){
+    body=q('Q'+num, S.lang==='ko'?'일행은 어떤 사이야?':'What’s your party?')+
+      optGroup('relation',[
+        {id:'friend',ko:'친구',en:'Friends'},
+        {id:'family',ko:'가족',en:'Family'},
+        {id:'couple',ko:'연인',en:'Couple'},
+        {id:'solo_w',ko:'동료',en:'Coworkers'}
+      ], S.survey.relation, false);
+  }
+  else if(step==='purposes'){
+    body=q('Q'+num, S.lang==='ko'?'여행의 느낌은? (최대 3개)':'Trip vibe? (up to 3)')+
+      optGroup('purposes',PURPOSES,S.survey.purposes,true)+
+      '<div class="q-hint">'+(S.lang==='ko'?'고를수록 너 취향대로 짜줄게.':'More picks = more personalized.')+'</div>';
+  }
+  else if(step==='budget'){
+    var b=S.survey.budget;
+    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+(S.lang==='ko'?'현지 최대 경비는?':'Max on-site budget?')+'</div>'+
+      '<div class="budget-val">¥ <span id="bVal">'+b.toLocaleString()+'</span> <small>'+(S.lang==='ko'?'/ 1인':'/ person')+'</small></div>'+
+      '<input type="range" id="bRange" min="10000" max="200000" step="5000" value="'+b+'">'+
+      '<div class="budget-marks"><span>¥10,000</span><span>¥200,000</span></div>'+
+      '<div class="budget-quick" id="bQuick"></div>';
+  }
+  else if(step==='visited'){
+    body=q('Q'+num, S.lang==='ko'?destName()+', 처음이야?':'First time here?')+
+      optGroup('visited',[
+        {id:'first',ko:'처음이야',en:'First time'},
+        {id:'again',ko:'가본 적 있어',en:'Been before'}
+      ], S.survey.visited, false);
+  }
+  else if(step==='nights'){
+    var nt=S.survey.nights;
+    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+(S.lang==='ko'?'얼마나 머물러?':'How long?')+'</div>'+
+      '<div class="stepper"><button id="nMinus">−</button>'+
+      '<div class="nval"><span id="nVal">'+nt+'</span>'+(S.lang==='ko'?'박':'N')+'<small>'+(nt+1)+(S.lang==='ko'?'일':' days')+'</small></div>'+
+      '<button id="nPlus">+</button></div>';
+  }
+  else if(step==='month'){
+    var months=[{m:11,ko:'11월',en:'Nov'},{m:12,ko:'12월',en:'Dec'},{m:1,ko:'1월',en:'Jan'},{m:2,ko:'2월',en:'Feb'},{m:3,ko:'3월',en:'Mar'}];
+    var mo='<div class="months">';
+    months.forEach(function(x){
+      mo+='<div class="opt month'+(S.survey.month===x.m?' sel':'')+'" data-m="'+x.m+'">'+(S.lang==='ko'?x.ko:x.en)+'</div>';
+    });
+    mo+='</div>';
+    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+(S.lang==='ko'?'언제 갈래? (11~3월)':'When? (Nov–Mar)')+'</div>'+mo+
+      '<div class="q-hint">'+(S.lang==='ko'?'한겨울일수록 눈·야경·온천이 진해져.':'Deep winter = more snow, night views, onsen.')+'</div>';
+  }
+  else if(step==='transit'){
+    body=q('Q'+num, S.lang==='ko'?'현지 이동은 어떻게?':'Getting around?')+
+      optGroup('transit',[
+        {id:'transit',ko:'뚜벅이(트램·버스)',en:'Tram & bus'},
+        {id:'car',ko:'렌터카',en:'Rental car'}
+      ], S.survey.transit, false);
+  }
+  else if(step==='pace'){
+    body=q('Q'+num, S.lang==='ko'?'여행 속도는?':'Your pace?')+
+      optGroup('pace',[
+        {id:'packed',ko:'알차게',en:'Packed'},
+        {id:'relaxed',ko:'느긋하게',en:'Relaxed'}
+      ], S.survey.pace, false);
+  }
+  qc.innerHTML=body;
+  wireSurvey(step);
+  var nextBtn=document.getElementById('qNext');
+  var last=(surveyStep===steps.length-1);
+  nextBtn.textContent= last? tr('s_done'): tr('s_next');
+  document.getElementById('qPrev').style.visibility = surveyStep===0?'hidden':'visible';
+  updateNextEnabled(step);
+}
+function q(num,title){ return '<div class="qnum">'+num+'</div><div class="qtitle">'+title+'</div>'; }
+function optGroup(key,arr,cur,multi){
+  var h='<div class="opts">';
+  arr.forEach(function(o){
+    var on = multi ? (cur.indexOf(o.id)>=0) : (cur===o.id);
+    h+='<div class="opt'+(multi?' multi':'')+(on?' sel':'')+'" data-k="'+key+'" data-id="'+o.id+'">'+(S.lang==='ko'?o.ko:o.en)+'</div>';
+  });
+  h+='</div>'; return h;
+}
+function wireSurvey(step){
+  var opts=document.querySelectorAll('#qcard .opt[data-id]');
+  opts.forEach(function(o){
+    o.onclick=function(){
+      var k=this.getAttribute('data-k'), id=this.getAttribute('data-id');
+      if(k==='purposes'){
+        var arr=S.survey.purposes, ix=arr.indexOf(id);
+        if(ix>=0) arr.splice(ix,1); else { if(arr.length>=3) return; arr.push(id); }
+      } else { S.survey[k]=id; }
+      renderSurvey();
+    };
+  });
+  document.querySelectorAll('#qcard .month').forEach(function(o){
+    o.onclick=function(){ S.survey.month=parseInt(this.getAttribute('data-m')); renderSurvey(); };
+  });
+  if(step==='budget'){
+    var rng=document.getElementById('bRange');
+    rng.oninput=function(){ S.survey.budget=parseInt(this.value); document.getElementById('bVal').textContent=S.survey.budget.toLocaleString(); };
+    var bq=document.getElementById('bQuick');
+    [['아껴서','Tight',20000],['적당히','Mid',45000],['넉넉히','Plenty',90000],['플렉스','Flex',150000]].forEach(function(p){
+      var d=document.createElement('div'); d.className='opt'; d.textContent=S.lang==='ko'?p[0]:p[1];
+      d.onclick=function(){ S.survey.budget=p[2]; rng.value=p[2]; document.getElementById('bVal').textContent=p[2].toLocaleString(); };
+      bq.appendChild(d);
+    });
+  }
+  if(step==='nights'){
+    document.getElementById('nMinus').onclick=function(){ S.survey.nights=Math.max(1,S.survey.nights-1); renderSurvey(); };
+    document.getElementById('nPlus').onclick=function(){ S.survey.nights=Math.min(6,S.survey.nights+1); renderSurvey(); };
+  }
+}
+function updateNextEnabled(step){
+  var ok=true;
+  if(step==='relation') ok=!!S.survey.relation;
+  else if(step==='purposes') ok=S.survey.purposes.length>0;
+  else if(step==='visited') ok=!!S.survey.visited;
+  else if(step==='month') ok=!!S.survey.month;
+  else if(step==='transit') ok=!!S.survey.transit;
+  else if(step==='pace') ok=!!S.survey.pace;
+  document.getElementById('qNext').disabled=!ok;
+}
+document.getElementById('qNext').onclick=function(){
+  var steps=surveySteps();
+  if(this.disabled) return;
+  if(surveyStep<steps.length-1){ surveyStep++; renderSurvey(); }
+  else { startLoading(); }
+};
+document.getElementById('qPrev').onclick=function(){
+  if(surveyStep>0){ surveyStep--; renderSurvey(); }
+};
+setInterval(function(){ if(current==='survey'){ updateNextEnabled(surveySteps()[surveyStep]); } },200);
+
+/* ===================== LOADING ===================== */
+function startLoading(){
+  show('loading');
+  var n=npcById(S.npc);
+  var img=document.getElementById('loadNpc'); img.src=SPR+n.img; img.style.width=(n.w)+'px';
+  var lines = S.lang==='ko'
+    ? ['눈길을 살피는 중...','맛집 좌표 찍는 중...','야경 시간 계산 중...','예산 맞추는 중...','루트 완성!']
+    : ['Scanning snowy trails...','Marking tasty spots...','Timing the night views...','Fitting the budget...','Route ready!'];
+  var fill=document.getElementById('loadFill'), pct=document.getElementById('loadPct'), line=document.getElementById('loadLine');
+  var p=0;
+  var iv=setInterval(function(){
+    p+=Math.random()*9+4; if(p>100)p=100;
+    fill.style.width=p+'%'; pct.textContent=Math.floor(p)+'%';
+    line.textContent=lines[Math.min(lines.length-1, Math.floor(p/22))];
+    if(p>=100){ clearInterval(iv); setTimeout(function(){ PLAN=buildPlan(); show('plan'); }, 600); }
+  },230);
+}
+
+/* ===================== HOKKAIDO POI DATA (by region) ===================== */
+var POI_BY_REGION={
+ hakodate:[
+  {id:'asaichi', icon:'ore', meal:true, slot:'morning', cost:2200, cat:['food'],
+    ko:'하코다테 아침시장', en:'Hakodate Morning Market', areako:'역 앞', areaen:'By the station',
+    dko:'갓 잡은 오징어 활어회랑 해산물 덮밥으로 아침을 든든하게. 직접 낚는 오징어 낚시터도 있어.',
+    den:'Start with live squid sashimi and a fresh seafood bowl. You can even fish your own squid.',
+    tko:'오징어 소면은 여기서 꼭 먹어봐.', ten:'Don’t skip the live squid somen.'},
+  {id:'lucky', icon:'ore', meal:true, slot:'lunch', cost:900, cat:['food'],
+    ko:'럭키피에로', en:'Lucky Pierrot', areako:'베이 에어리어', areaen:'Bay Area',
+    dko:'하코다테에만 있는 전설의 수제버거. 차이니즈 치킨버거가 시그니처야.',
+    den:'A legendary local burger chain found only in Hakodate. Get the Chinese Chicken Burger.',
+    tko:'양 많으니까 배고플 때 가자.', ten:'Portions are huge — go hungry.'},
+  {id:'ajisai', icon:'ore', meal:true, slot:'lunch', cost:1000, cat:['food'],
+    ko:'아지사이 시오라멘', en:'Ajisai Shio Ramen', areako:'고료카쿠', areaen:'Goryokaku',
+    dko:'맑고 깔끔한 하코다테식 소금라멘. 추운 날 속을 데우기 딱 좋아.',
+    den:'Clear, clean Hakodate-style salt ramen — perfect to warm up on a cold day.',
+    tko:'본점은 고료카쿠 근처에 있어.', ten:'The main shop is near Goryokaku.'},
+  {id:'genghis', icon:'ore', meal:true, slot:'dinner', cost:3000, cat:['food'],
+    ko:'징기스칸 양고기', en:'Genghis Khan Lamb BBQ', areako:'시내', areaen:'Downtown',
+    dko:'홋카이도 명물 양고기 철판구이. 불판 위에서 지글지글, 겨울밤에 최고야.',
+    den:'Hokkaido’s famous grilled lamb. Sizzling on the iron plate — best on a winter night.',
+    tko:'생맥주 한 잔이면 완벽해.', ten:'A cold draft beer completes it.'},
+  {id:'ropeway', icon:'mountain', slot:'night', cost:1800, cat:['view','heal'], winter:true,
+    ko:'하코다테산 야경', en:'Mt. Hakodate Night View', areako:'하코다테산', areaen:'Mt. Hakodate',
+    dko:'세계 3대 야경 중 하나. 로프웨이 타고 올라가면 반짝이는 도시가 한눈에 펼쳐져.',
+    den:'One of the world’s top 3 night views. Ride the ropeway to see the whole glittering city.',
+    tko:'해 지기 30분 전에 올라가면 명장면을 다 봐.', ten:'Go up 30 min before sunset for the full show.'},
+  {id:'motomachi', icon:'staff', slot:'after', cost:0, cat:['view','culture','heal'],
+    ko:'모토마치 언덕길', en:'Motomachi Slopes', areako:'모토마치', areaen:'Motomachi',
+    dko:'하치만자카 언덕에서 바다까지 일직선. 옛 서양식 건물과 교회가 그림 같아.',
+    den:'Hachiman-zaka slope runs straight to the sea, framed by old Western buildings and churches.',
+    tko:'눈 쌓인 언덕길이 인생샷 포인트야.', ten:'The snowy slope is the photo spot.'},
+  {id:'kanemori', icon:'ore', slot:'after', cost:2500, cat:['shop','food'],
+    ko:'가네모리 아카렌가 창고', en:'Kanemori Red Brick Warehouses', areako:'베이 에어리어', areaen:'Bay Area',
+    dko:'붉은 벽돌 창고를 개조한 쇼핑·카페 거리. 기념품이랑 디저트 천국이야.',
+    den:'Red-brick warehouses turned into shops and cafes — souvenir and dessert heaven.',
+    tko:'겨울엔 창고 앞 크리스마스 트리가 예뻐.', ten:'In winter the waterfront tree is gorgeous.'},
+  {id:'goryokaku', icon:'staff', slot:'morning', cost:1000, cat:['culture','view'], winter:true,
+    ko:'고료카쿠 타워', en:'Goryokaku Tower', areako:'고료카쿠', areaen:'Goryokaku',
+    dko:'별 모양 성곽을 타워 전망대에서 내려다봐. 겨울엔 별 모양 일루미네이션이 켜져.',
+    den:'See the star-shaped fort from the tower deck. In winter the whole star lights up.',
+    tko:'밤엔 별의 꿈 일루미네이션을 노려봐.', ten:'At night, catch the “Star’s Dream” illumination.'},
+  {id:'yunokawa', icon:'cave_entrance', slot:'night', cost:1500, cat:['onsen','heal'], winter:true,
+    ko:'유노카와 온천', en:'Yunokawa Onsen', areako:'유노카와', areaen:'Yunokawa',
+    dko:'바다를 보며 몸을 녹이는 온천 마을. 눈 내리는 노천탕은 겨울에만 누리는 호사야.',
+    den:'A seaside hot-spring town. A snowy open-air bath is a winter-only luxury.',
+    tko:'무료 족욕탕도 있으니 가볍게 즐겨도 돼.', ten:'There’s a free foot bath too.'},
+  {id:'onuma', icon:'mountain', slot:'morning', cost:3500, cat:['active','view','heal'], winter:true,
+    ko:'오누마 공원', en:'Onuma Park', areako:'근교', areaen:'Near Hakodate',
+    dko:'얼어붙은 호수와 눈 덮인 코마가타케 화산. 겨울엔 스노슈·썰매·빙어낚시까지 가능해.',
+    den:'A frozen lake under snow-capped Mt. Komagatake. Try snowshoeing, sledding, or ice fishing.',
+    tko:'기차로 30분, 당일치기 눈놀이 코스로 딱.', ten:'30 min by train — a perfect snow day trip.'},
+  {id:'trappistine', icon:'staff', slot:'after', cost:0, cat:['culture','heal'],
+    ko:'트라피스틴 수도원', en:'Trappistine Convent', areako:'근교', areaen:'Near Hakodate',
+    dko:'붉은 벽돌과 눈이 어우러진 고요한 수도원. 수제 마들렌과 캔디가 유명해.',
+    den:'A quiet convent of red brick and snow, famous for handmade madeleines and candy.',
+    tko:'한적해서 마음이 차분해지는 곳이야.', ten:'Peaceful and calming — escape the crowds.'},
+  {id:'hachiman', icon:'staff', slot:'after', cost:0, cat:['view','heal'], winter:true,
+    ko:'니주켄자카 일루미네이션', en:'Nijukken-zaka Illumination', areako:'모토마치', areaen:'Motomachi',
+    dko:'겨울 저녁, 가로수에 불이 들어오는 낭만 언덕길. 산책하기 좋아.',
+    den:'On winter evenings the slope’s trees light up — a romantic stroll.',
+    tko:'야경 보러 가기 전에 들르면 동선이 좋아.', ten:'Stop by before the night view — great route.'},
+  {id:'beer', icon:'ore', meal:true, slot:'dinner', cost:2600, cat:['food','heal'],
+    ko:'하코다테 맥주관', en:'Hakodate Beer Hall', areako:'베이 에어리어', areaen:'Bay Area',
+    dko:'직접 만든 지역 맥주와 해산물 안주. 따뜻한 분위기에서 하루를 마무리해.',
+    den:'House-brewed local beer with seafood plates — a warm way to end the day.',
+    tko:'무알콜도 있으니 운전자도 OK.', ten:'Non-alcoholic options too — drivers welcome.'},
+  {id:'church', icon:'staff', slot:'after', cost:0, cat:['culture','view'],
+    ko:'모토마치 성공회 교회', en:'Motomachi Churches', areako:'모토마치', areaen:'Motomachi',
+    dko:'가톨릭·성공회·정교회가 모인 이국적인 골목. 사진 찍기 정말 좋아.',
+    den:'Catholic, Anglican and Orthodox churches in one exotic lane — a photo dream.',
+    tko:'눈 오는 날 더 분위기 있어.', ten:'Even prettier when it snows.'}
+ ],
+ sapporo:[
+  {id:'s_market', icon:'ore', meal:true, slot:'morning', cost:2000, cat:['food'],
+    ko:'니조 시장', en:'Nijo Market', areako:'시내', areaen:'Downtown',
+    dko:'갓 잡은 게·연어알·성게가 듬뿍 올라간 해산물 덮밥으로 아침을 시작해.',
+    den:'Start with a seafood bowl piled with crab, salmon roe and sea urchin.',
+    tko:'아침 일찍 가야 신선하고 한산해.', ten:'Go early for the freshest, quietest market.'},
+  {id:'s_ramen', icon:'ore', meal:true, slot:'lunch', cost:1100, cat:['food'],
+    ko:'삿포로 미소라멘', en:'Sapporo Miso Ramen', areako:'스스키노', areaen:'Susukino',
+    dko:'진한 된장 국물에 옥수수·버터를 올린 삿포로식 라멘. 추위가 싹 가셔.',
+    den:'Rich miso broth topped with corn and butter — the cure for the cold.',
+    tko:'라멘요코초 골목에서 골라 먹는 재미가 있어.', ten:'Hit Ramen Yokocho alley for the full experience.'},
+  {id:'s_genghis', icon:'ore', meal:true, slot:'dinner', cost:3200, cat:['food'],
+    ko:'삿포로 징기스칸', en:'Sapporo Genghis Khan', areako:'시내', areaen:'Downtown',
+    dko:'양고기 철판구이의 본고장. 연기 자욱한 가게에서 지글지글 구워 먹어.',
+    den:'The home of grilled mutton — sizzle it yourself in a smoky local joint.',
+    tko:'다루마가 가장 유명한 노포야.', ten:'Daruma is the most famous old-school spot.'},
+  {id:'s_odori', icon:'staff', slot:'after', cost:0, cat:['view','heal'], winter:true,
+    ko:'오도리 공원', en:'Odori Park', areako:'도심', areaen:'City center',
+    dko:'겨울엔 눈축제와 화이트 일루미네이션이 펼쳐지는 도심 속 설경 공원.',
+    den:'In winter it hosts the Snow Festival and white illumination right downtown.',
+    tko:'2월 눈축제 기간이면 대형 눈조각이 압권.', ten:'During the Feb Snow Festival the giant snow sculptures are unreal.'},
+  {id:'s_moiwa', icon:'mountain', slot:'night', cost:1700, cat:['view','heal'], winter:true,
+    ko:'모이와산 야경', en:'Mt. Moiwa Night View', areako:'모이와산', areaen:'Mt. Moiwa',
+    dko:'로프웨이로 올라가 보는 삿포로의 보석 같은 야경. 일본 신 3대 야경이야.',
+    den:'Ride up for Sapporo’s jewel-box night view — one of Japan’s new top 3.',
+    tko:'케이블카+미니케이블카 연계 티켓을 끊어.', ten:'Get the combined ropeway + mini-cable ticket.'},
+  {id:'s_shiroi', icon:'staff', slot:'morning', cost:800, cat:['culture','shop'], winter:true,
+    ko:'시로이코이비토 파크', en:'Shiroi Koibito Park', areako:'서부', areaen:'West Sapporo',
+    dko:'유럽풍 과자 테마파크. 겨울 일루미네이션과 쿠키 만들기 체험이 있어.',
+    den:'A European-style sweets park with winter lights and a cookie-making workshop.',
+    tko:'대표 과자 시로이코이비토는 기념품 1순위.', ten:'The signature cookies are the top souvenir.'},
+  {id:'s_beer', icon:'ore', meal:true, slot:'dinner', cost:2600, cat:['food','culture'],
+    ko:'삿포로 맥주 박물관', en:'Sapporo Beer Museum', areako:'동부', areaen:'East Sapporo',
+    dko:'붉은 벽돌 양조장에서 즐기는 갓 뽑은 생맥주와 양고기 비어가든.',
+    den:'Fresh-poured draft and a lamb beer garden in a historic red-brick brewery.',
+    tko:'3종 비교 시음 세트를 노려봐.', ten:'Try the three-beer tasting flight.'},
+  {id:'s_susukino', icon:'staff', slot:'after', cost:0, cat:['view','shop'], winter:true,
+    ko:'스스키노 네온거리', en:'Susukino Neon Street', areako:'스스키노', areaen:'Susukino',
+    dko:'홋카이도 최대 번화가. 눈 내리는 밤, 네온과 아이스바가 어우러져.',
+    den:'Hokkaido’s biggest nightlife district — neon and ice bars in the falling snow.',
+    tko:'눈축제 땐 얼음조각(스스키노 아이스월드)도 봐.', ten:'During the festival, catch the Susukino ice sculptures.'}
+ ],
+ otaru:[
+  {id:'o_market', icon:'ore', meal:true, slot:'morning', cost:1800, cat:['food'],
+    ko:'산카쿠 시장', en:'Sankaku Market', areako:'역 앞', areaen:'By the station',
+    dko:'작은 시장 식당에서 먹는 푸짐한 해산물 덮밥. 게와 성게가 신선해.',
+    den:'Generous seafood bowls in tiny market diners — super-fresh crab and uni.',
+    tko:'가게마다 덮밥 구성이 다르니 골라봐.', ten:'Each stall has its own bowl — shop around.'},
+  {id:'o_sushi', icon:'ore', meal:true, slot:'lunch', cost:3000, cat:['food'],
+    ko:'오타루 스시거리', en:'Otaru Sushi Street', areako:'스시야도리', areaen:'Sushiya-dori',
+    dko:'항구 도시의 신선한 초밥 거리. 점심 오마카세가 가성비 좋아.',
+    den:'A street of fresh harbour-town sushi — the lunch omakase is great value.',
+    tko:'예약 없이 가려면 오픈 직후를 노려.', ten:'No reservation? Go right at opening.'},
+  {id:'o_canal', icon:'staff', slot:'night', cost:0, cat:['view','heal'], winter:true,
+    ko:'오타루 운하', en:'Otaru Canal', areako:'운하', areaen:'Canal',
+    dko:'가스등이 켜진 운하의 설경. 겨울 ‘눈빛의 길’ 축제 땐 촛불이 운하를 수놓아.',
+    den:'A gaslit canal in the snow — magical during the winter Snow Light Path festival.',
+    tko:'해 질 무렵 가스등이 켜지는 순간이 최고.', ten:'Come at dusk when the gas lamps flicker on.'},
+  {id:'o_music', icon:'staff', slot:'after', cost:0, cat:['culture','shop'],
+    ko:'오르골당', en:'Music Box Museum', areako:'사카이마치', areaen:'Sakaimachi',
+    dko:'증기시계 앞 오르골 전문점. 수천 개의 오르골 소리가 가득해.',
+    den:'A music-box emporium by the steam clock, filled with thousands of melodies.',
+    tko:'나만의 오르골 만들기 체험도 가능해.', ten:'You can assemble your own music box.'},
+  {id:'o_glass', icon:'staff', slot:'after', cost:500, cat:['culture','shop'],
+    ko:'키타이치 글라스', en:'Kitaichi Glass', areako:'사카이마치', areaen:'Sakaimachi',
+    dko:'유리공예와 167개 석유램프가 켜진 홀 카페가 유명한 거리.',
+    den:'Glass craft and a hall café lit by 167 oil lamps.',
+    tko:'램프 홀에서 마시는 따뜻한 음료가 분위기 최고.', ten:'A hot drink in the lamp hall is pure mood.'},
+  {id:'o_letao', icon:'ore', meal:true, slot:'after', cost:900, cat:['food','shop'],
+    ko:'르타오 본점 카페', en:'LeTAO Café', areako:'사카이마치', areaen:'Sakaimachi',
+    dko:'입에서 녹는 더블 치즈케이크로 유명한 카페. 2층 전망도 좋아.',
+    den:'Famous for melt-in-your-mouth double cheesecake, with a nice upstairs view.',
+    tko:'갓 구운 치즈케이크는 매장에서만 맛봐.', ten:'The warm fresh cheesecake is shop-only.'},
+  {id:'o_tengu', icon:'mountain', slot:'night', cost:1400, cat:['view'], winter:true,
+    ko:'텐구야마 로프웨이', en:'Mt. Tengu Ropeway', areako:'텐구야마', areaen:'Mt. Tengu',
+    dko:'오타루 시내와 이시카리 만을 한눈에 담는 야경 명소.',
+    den:'A night-view peak overlooking Otaru and Ishikari Bay.',
+    tko:'스키도 즐길 수 있는 작은 슬로프가 있어.', ten:'There’s a small ski slope at the top too.'}
+ ],
+ furano:[
+  {id:'f_morning', icon:'ore', meal:true, slot:'morning', cost:1200, cat:['food'],
+    ko:'후라노 베이커리 아침', en:'Furano Bakery Morning', areako:'시내', areaen:'Town',
+    dko:'갓 구운 빵과 후라노 우유로 시작하는 든든한 시골 아침.',
+    den:'Fresh-baked bread and Furano milk for a hearty countryside breakfast.',
+    tko:'후라노 우유 푸딩도 꼭 챙겨.', ten:'Grab the Furano milk pudding too.'},
+  {id:'f_curry', icon:'ore', meal:true, slot:'lunch', cost:1300, cat:['food'],
+    ko:'후라노 오므카레', en:'Furano Omurice Curry', areako:'시내', areaen:'Town',
+    dko:'지역 채소를 듬뿍 넣은 후라노 명물 오므카레. 든든하게 배를 채워.',
+    den:'Furano’s signature omurice curry, loaded with local veggies.',
+    tko:'후라노 와인 한 잔과도 잘 어울려.', ten:'Pairs nicely with a glass of Furano wine.'},
+  {id:'f_ski', icon:'mountain', slot:'morning', cost:5000, cat:['active'], winter:true,
+    ko:'후라노 스키장', en:'Furano Ski Resort', areako:'기타노미네', areaen:'Kitanomine',
+    dko:'보송한 파우더 스노로 유명한 대형 스키장. 초보 코스도 넉넉해.',
+    den:'A big resort famous for fluffy powder, with plenty of beginner runs.',
+    tko:'장비 렌탈은 미리 예약하면 편해.', ten:'Reserve rental gear ahead to save time.'},
+  {id:'f_ningle', icon:'staff', slot:'after', cost:0, cat:['culture','heal'], winter:true,
+    ko:'닝구르 테라스', en:'Ningle Terrace', areako:'숲속', areaen:'Forest',
+    dko:'숲속 통나무 공방들이 불을 밝히는 동화 같은 거리. 겨울밤이 특히 예뻐.',
+    den:'A fairy-tale lane of lamplit log craft cabins in the woods — magical at night.',
+    tko:'근처 ‘숲의 시계’ 카페도 들러봐.', ten:'Stop by the nearby Forest Clock café.'},
+  {id:'f_snow', icon:'mountain', slot:'after', cost:3000, cat:['active','view'], winter:true,
+    ko:'후라노 눈놀이터', en:'Furano Snow Land', areako:'근교', areaen:'Near Furano',
+    dko:'스노모빌·바나나보트·튜빙까지 즐기는 겨울 액티비티 천국.',
+    den:'Snowmobiles, banana boats and tubing — a winter activity playground.',
+    tko:'두꺼운 방수 장갑은 필수야.', ten:'Bring thick waterproof gloves.'},
+  {id:'f_cheese', icon:'staff', slot:'after', cost:600, cat:['food','shop'],
+    ko:'후라노 치즈공방', en:'Furano Cheese Factory', areako:'근교', areaen:'Near Furano',
+    dko:'직접 만든 치즈와 아이스크림을 맛보고 체험도 할 수 있는 공방.',
+    den:'Taste house-made cheese and ice cream — hands-on workshops too.',
+    tko:'겨울에도 진한 아이스크림은 별미.', ten:'The rich ice cream is a treat even in winter.'},
+  {id:'f_dinner', icon:'ore', meal:true, slot:'dinner', cost:2800, cat:['food','heal'],
+    ko:'후라노 화로구이', en:'Furano Hearth Grill', areako:'시내', areaen:'Town',
+    dko:'화롯불에 구워 먹는 지역 채소와 고기. 시골 정취 가득한 저녁이야.',
+    den:'Local veg and meat grilled over a hearth — a cozy countryside dinner.',
+    tko:'예약하면 따뜻한 자리를 잡을 수 있어.', ten:'Reserve to get a warm seat by the fire.'}
+ ],
+ biei:[
+  {id:'b_morning', icon:'ore', meal:true, slot:'morning', cost:1100, cat:['food'],
+    ko:'비에이 빵집 아침', en:'Biei Bakery Morning', areako:'시내', areaen:'Town',
+    dko:'언덕 마을의 작은 빵집에서 즐기는 소박하고 따뜻한 아침.',
+    den:'A simple, warm breakfast at a tiny bakery in the hill town.',
+    tko:'비에이 우유로 만든 빵이 별미야.', ten:'Breads made with Biei milk are a treat.'},
+  {id:'b_curry', icon:'ore', meal:true, slot:'lunch', cost:1300, cat:['food'],
+    ko:'비에이 카레우동', en:'Biei Curry Udon', areako:'시내', areaen:'Town',
+    dko:'쫄깃한 면에 진한 카레 국물. 추운 언덕 산책 후 속을 데우기 딱이야.',
+    den:'Chewy udon in rich curry broth — perfect after a cold hill walk.',
+    tko:'비에이의 대표 향토 음식이야.', ten:'It’s Biei’s signature local dish.'},
+  {id:'b_bluepond', icon:'mountain', slot:'morning', cost:0, cat:['view'], winter:true,
+    ko:'흰수염 폭포 & 청의 연못', en:'Blue Pond & Shirahige Falls', areako:'시로가네', areaen:'Shirogane',
+    dko:'겨울엔 라이트업으로 푸르게 빛나는 신비로운 연못과 얼어붙은 폭포.',
+    den:'In winter the mystical blue pond and frozen falls glow under light-ups.',
+    tko:'겨울 라이트업은 저녁에만 켜져.', ten:'The winter light-up runs evenings only.'},
+  {id:'b_hills', icon:'mountain', slot:'after', cost:0, cat:['view','heal'], winter:true,
+    ko:'비에이 언덕', en:'Biei Hills', areako:'패치워크로드', areaen:'Patchwork Road',
+    dko:'끝없이 펼쳐진 눈 덮인 언덕과 외딴 나무들. 홋카이도 엽서 그 자체야.',
+    den:'Endless snowy hills dotted with lone trees — Hokkaido on a postcard.',
+    tko:'‘켄과 메리의 나무’가 포토 스폿이야.', ten:'The “Ken & Mary Tree” is the photo spot.'},
+  {id:'b_shikisai', icon:'mountain', slot:'after', cost:500, cat:['view','active'], winter:true,
+    ko:'시키사이노오카', en:'Shikisai-no-Oka', areako:'근교', areaen:'Near Biei',
+    dko:'여름엔 꽃밭, 겨울엔 새하얀 설원에서 스노래프팅·스노모빌을 즐겨.',
+    den:'Flower fields in summer; in winter, snow-rafting and snowmobiles on white fields.',
+    tko:'알파카 목장도 함께 있어.', ten:'There’s an alpaca farm on site too.'},
+  {id:'b_dinner', icon:'ore', meal:true, slot:'dinner', cost:2400, cat:['food','heal'],
+    ko:'비에이 향토 요리', en:'Biei Farm Dinner', areako:'시내', areaen:'Town',
+    dko:'지역 농가의 채소와 고기로 차린 정갈한 시골 저녁상.',
+    den:'A tidy farm-to-table dinner of local veg and meat.',
+    tko:'한적하니 예약하고 가면 좋아.', ten:'It’s quiet — reserving helps.'}
+ ],
+ wakkanai:[
+  {id:'w_milk', icon:'ore', meal:true, slot:'morning', cost:900, cat:['food'],
+    ko:'소야 우유 아침', en:'Soya Milk Morning', areako:'시내', areaen:'Town',
+    dko:'최북단 목장의 진한 우유와 요구르트로 든든하게 출발해.',
+    den:'Start with rich milk and yogurt from the northernmost farms.',
+    tko:'소야 흑우 버거도 별미야.', ten:'The Soya black-beef burger is a treat.'},
+  {id:'w_uni', icon:'ore', meal:true, slot:'lunch', cost:3500, cat:['food'],
+    ko:'성게 해산물 덮밥', en:'Uni Seafood Bowl', areako:'항구', areaen:'Harbour',
+    dko:'차가운 바다가 키운 진한 성게와 게가 듬뿍. 최북단의 사치야.',
+    den:'Cold-sea uni and crab piled high — a northernmost luxury.',
+    tko:'여름 성게철이 절정이지만 겨울 게도 훌륭해.', ten:'Summer is peak uni, but winter crab is superb.'},
+  {id:'w_soya', icon:'mountain', slot:'morning', cost:0, cat:['view'], winter:true,
+    ko:'소야미사키', en:'Cape Soya', areako:'최북단', areaen:'Northernmost point',
+    dko:'일본 최북단 기념비가 선 곶. 거센 바람과 끝없는 오호츠크해가 펼쳐져.',
+    den:'The cape with Japan’s northernmost monument — fierce wind and endless sea.',
+    tko:'방한 단단히! 바람이 정말 매서워.', ten:'Bundle up — the wind is brutal.'},
+  {id:'w_nosshap', icon:'mountain', slot:'night', cost:0, cat:['view','heal'], winter:true,
+    ko:'노샤푸 곶 석양', en:'Cape Noshappu Sunset', areako:'서해안', areaen:'West coast',
+    dko:'리시리 섬 너머로 지는 석양과 돌고래 등대가 어우러진 명소.',
+    den:'Sunset behind Rishiri Island beside a dolphin-shaped lighthouse.',
+    tko:'맑은 날엔 리시리 후지가 또렷이 보여.', ten:'On clear days, Mt. Rishiri stands out sharply.'},
+  {id:'w_park', icon:'staff', slot:'after', cost:0, cat:['culture','view'],
+    ko:'왓카나이 방파제 돔', en:'Wakkanai Breakwater Dome', areako:'항구', areaen:'Harbour',
+    dko:'70개 기둥이 늘어선 반원형 콘크리트 돔. 독특한 건축이 인상적이야.',
+    den:'A half-arched dome of 70 columns — striking, unusual architecture.',
+    tko:'사진이 정말 멋지게 나오는 곳.', ten:'A seriously photogenic spot.'},
+  {id:'w_onsen', icon:'cave_entrance', slot:'night', cost:1200, cat:['onsen','heal'], winter:true,
+    ko:'왓카나이 온천', en:'Wakkanai Onsen', areako:'시내', areaen:'Town',
+    dko:'매서운 북녘 바람을 녹이는 따끈한 온천. 여행의 피로가 싹 풀려.',
+    den:'A hot soak to melt the harsh northern wind and travel fatigue.',
+    tko:'바다 전망 노천탕이 있는 곳을 골라.', ten:'Pick one with a sea-view open-air bath.'},
+  {id:'w_crab', icon:'ore', meal:true, slot:'dinner', cost:4000, cat:['food'],
+    ko:'왓카나이 게요리', en:'Wakkanai Crab Dinner', areako:'시내', areaen:'Town',
+    dko:'털게·대게를 통째로 즐기는 호화로운 게 코스. 북해의 진미야.',
+    den:'A lavish course of whole hairy and snow crab — the north sea’s finest.',
+    tko:'게 코스는 미리 예약하는 게 안전해.', ten:'Book the crab course ahead to be safe.'}
+ ],
+ shiretoko:[
+  {id:'sh_morning', icon:'ore', meal:true, slot:'morning', cost:1600, cat:['food'],
+    ko:'우토로 어항 아침', en:'Utoro Harbour Morning', areako:'우토로', areaen:'Utoro',
+    dko:'작은 어항 식당에서 맛보는 갓 잡은 연어·게의 해산물 아침.',
+    den:'Just-caught salmon and crab at a tiny fishing-harbour diner.',
+    tko:'연어알 덮밥이 특히 인기야.', ten:'The salmon-roe bowl is the favorite.'},
+  {id:'sh_ramen', icon:'ore', meal:true, slot:'lunch', cost:1100, cat:['food'],
+    ko:'우토로 해물라멘', en:'Utoro Seafood Ramen', areako:'우토로', areaen:'Utoro',
+    dko:'시레토코 바다가 우러난 진한 해물 국물 라멘. 추운 오지에서 큰 위로야.',
+    den:'Rich seafood-broth ramen — a big comfort out in the cold wilderness.',
+    tko:'유빙 워크 후에 먹으면 최고.', ten:'Best right after a drift-ice walk.'},
+  {id:'sh_driftice', icon:'mountain', slot:'morning', cost:5000, cat:['active','view'], winter:true,
+    ko:'유빙 워크', en:'Drift Ice Walk', areako:'오호츠크해', areaen:'Sea of Okhotsk',
+    dko:'드라이슈트를 입고 떠다니는 유빙 위를 걷는 시레토코만의 겨울 체험.',
+    den:'In a dry suit, walk across floating drift ice — Shiretoko’s signature winter thrill.',
+    tko:'1~3월 유빙 시즌에만 가능해. 예약 필수.', ten:'Jan–Mar drift-ice season only — reserve ahead.'},
+  {id:'sh_falls', icon:'mountain', slot:'after', cost:0, cat:['view','heal'], winter:true,
+    ko:'오신코신 폭포', en:'Oshinkoshin Falls', areako:'국도변', areaen:'Roadside',
+    dko:'두 갈래로 갈라져 떨어지는 폭포. 겨울엔 얼어붙은 빙폭이 장관이야.',
+    den:'A twin-stream waterfall that freezes into a spectacular ice fall in winter.',
+    tko:'계단이 미끄러우니 아이젠이 있으면 좋아.', ten:'Steps get icy — crampons help.'},
+  {id:'sh_center', icon:'staff', slot:'after', cost:500, cat:['culture','heal'],
+    ko:'시레토코 자연센터', en:'Shiretoko Nature Center', areako:'우토로', areaen:'Utoro',
+    dko:'세계자연유산 시레토코의 생태를 배우고 스노슈 투어도 신청할 수 있어.',
+    den:'Learn about the UNESCO wilderness and book guided snowshoe tours.',
+    tko:'스노슈 가이드 투어를 여기서 예약해.', ten:'Book the guided snowshoe tour here.'},
+  {id:'sh_onsen', icon:'cave_entrance', slot:'night', cost:1500, cat:['onsen','heal'], winter:true,
+    ko:'우토로 온천', en:'Utoro Onsen', areako:'우토로', areaen:'Utoro',
+    dko:'유빙이 떠다니는 바다를 바라보며 몸을 녹이는 오지의 온천.',
+    den:'Soak while gazing at a drift-ice sea — a remote, restorative onsen.',
+    tko:'노천탕에서 보는 별이 끝내줘.', ten:'The stars from the open-air bath are unreal.'},
+  {id:'sh_crab', icon:'ore', meal:true, slot:'dinner', cost:3800, cat:['food'],
+    ko:'시레토코 게·해산물', en:'Shiretoko Crab Dinner', areako:'우토로', areaen:'Utoro',
+    dko:'오호츠크해의 게와 생선을 푸짐하게 즐기는 오지의 호사스러운 저녁.',
+    den:'A lavish remote dinner of Okhotsk crab and fish.',
+    tko:'숙소 정식에 포함된 경우가 많아.', ten:'Often included in your inn’s set dinner.'}
+ ]
+};
+
+/* ===================== PLAN BUILDER ===================== */
+var PLAN=null;
+function activePOI(){
+  var ids=(S.dests&&S.dests.length)?S.dests:['hakodate'];
+  var pool=[];
+  ids.forEach(function(rid){
+    var arr=POI_BY_REGION[rid]; if(!arr) return;
+    var rg=regionById(rid);
+    arr.forEach(function(p){
+      var c={}; for(var k in p) c[k]=p[k];
+      c.region=rid; c.rko=rg?rg.ko:''; c.ren=rg?rg.en:'';
+      pool.push(c);
+    });
+  });
+  return pool;
+}
+function destName(){
+  var ids=(S.dests&&S.dests.length)?S.dests:['hakodate'];
+  if(ids.length===1){ var r=regionById(ids[0]); return r?(S.lang==='ko'?r.ko:r.en):(S.lang==='ko'?'홋카이도':'Hokkaido'); }
+  return S.lang==='ko'?'홋카이도':'Hokkaido';
+}
+function destList(){
+  var ids=(S.dests&&S.dests.length)?S.dests:['hakodate'];
+  return ids.map(function(id){var r=regionById(id);return r?(S.lang==='ko'?r.ko:r.en):id;}).join(' · ');
+}
+function buildPlan(){
+  var sv=S.survey;
+  var nights=sv.nights, days=nights+1;
+  var purposes=sv.purposes.slice();
+  var perDay = sv.pace==='relaxed'?2:3;
+  var POOL=activePOI();
+  var ids=(S.dests&&S.dests.length)?S.dests:['hakodate'];
+  var order={}; ids.forEach(function(r,i){ order[r]=i; });
+  function score(p){ var s=0; p.cat.forEach(function(c){ if(purposes.indexOf(c)>=0) s+=3; }); if(p.winter) s+=1; return s; }
+  /* cluster by selected-region order, then by relevance */
+  var acts=POOL.filter(function(p){return !p.meal;}).slice().sort(function(a,b){
+    var oa=order[a.region]||0, ob=order[b.region]||0; if(oa!==ob) return oa-ob; return score(b)-score(a);
+  });
+  var meals=POOL.filter(function(p){return p.meal;}).slice().sort(function(a,b){
+    return (order[a.region]||0)-(order[b.region]||0);
+  });
+  var used={};
+  function takeAct(slotPref){
+    for(var i=0;i<acts.length;i++){ var p=acts[i]; if(used[p.id]) continue; if(p.slot===slotPref){used[p.id]=1;return p;} }
+    for(var j=0;j<acts.length;j++){ var qq=acts[j]; if(!used[qq.id]){ used[qq.id]=1; return qq; } }
+    return null;
+  }
+  function takeMeal(slot){
+    var pool=meals.filter(function(m){return m.slot===slot && !used['meal_'+m.id];});
+    if(!pool.length) pool=meals.filter(function(m){return m.slot===slot;});
+    if(!pool.length) pool=meals;
+    for(var i=0;i<pool.length;i++){ if(!used['meal_'+pool[i].id]){ used['meal_'+pool[i].id]=1; return pool[i]; } }
+    return pool[0];
+  }
+  var dayPlans=[];
+  for(var d=0;d<days;d++){
+    var items=[];
+    var first=(d===0), last=(d===days-1);
+    items.push(slotItem('08:30', takeMeal('morning'), 'morning'));
+    if(!first){ var am=takeAct('morning'); if(am) items.push(slotItem('10:30', am, am.slot)); }
+    items.push(slotItem('12:30', takeMeal('lunch'), 'lunch'));
+    var af=takeAct('after'); if(af) items.push(slotItem('14:30', af, af.slot));
+    if(perDay>=3 && !last){ var af2=takeAct('after'); if(af2) items.push(slotItem('16:30', af2, af2.slot)); }
+    if(!last){ var nightPick = takeAct('night'); if(nightPick) items.push(slotItem('18:30', nightPick, 'night')); }
+    items.push(slotItem('20:00', takeMeal('dinner'), 'dinner'));
+    dayPlans.push({day:d+1, first:first, last:last, items:items});
+  }
+  var total=0;
+  dayPlans.forEach(function(dp){ dp.items.forEach(function(it){ total+=it.cost; }); });
+  return { days:dayPlans, total:total, nights:nights };
+}
+function slotItem(time, poi){
+  return { time:time, id:poi.id, icon:poi.icon, meal:!!poi.meal, cost:poi.cost,
+    region:poi.region, rko:poi.rko, ren:poi.ren,
+    ko:poi.ko, en:poi.en, areako:poi.areako, areaen:poi.areaen, dko:poi.dko, den:poi.den, tko:poi.tko, ten:poi.ten };
+}
+
+/* ===================== PLAN RENDER ===================== */
+function enterPlan(){
+  setDock();
+  say(S.lang==='ko'?'짜잔! 너만을 위한 '+destName()+' 겨울 루트야. 마음에 들어?':'Ta-da! Your very own '+destName()+' winter route. Like it?');
+  renderPlan();
+}
+function relationLabel(){
+  var map={friend:{ko:'친구',en:'Friends'},family:{ko:'가족',en:'Family'},couple:{ko:'연인',en:'Couple'},solo_w:{ko:'동료',en:'Coworkers'}};
+  if(S.users.length<=1) return S.lang==='ko'?'나홀로':'Solo';
+  return L(map[S.survey.relation]||{ko:'일행',en:'Party'});
+}
+function monthLabel(){
+  var m={11:{ko:'11월',en:'Nov'},12:{ko:'12월',en:'Dec'},1:{ko:'1월',en:'Jan'},2:{ko:'2월',en:'Feb'},3:{ko:'3월',en:'Mar'}};
+  return L(m[S.survey.month]);
+}
+function purposeLabels(){
+  return S.survey.purposes.map(function(id){ for(var i=0;i<PURPOSES.length;i++) if(PURPOSES[i].id===id) return S.lang==='ko'?PURPOSES[i].ko:PURPOSES[i].en; return id; }).join(' · ');
+}
+/* small Instagram + Google-Maps links for each itinerary stop (query: place name near Hakodate) */
+var IG_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.2" cy="6.8" r="1.3" fill="currentColor"/></svg>';
+var GM_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c-3.9 0-7 3-7 6.9 0 5 7 12.1 7 12.1s7-7.1 7-12.1c0-3.9-3.1-6.9-7-6.9z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9.3" r="2.4" fill="currentColor"/></svg>';
+function placeLinks(name, region){
+  var ig='https://www.instagram.com/explore/search/keyword/?q='+encodeURIComponent(name);
+  var gm='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name+' '+(region||'홋카이도'));
+  return '<div class="tc-links">'+
+    '<a class="tcl ig" href="'+ig+'" target="_blank" rel="noopener" title="인스타그램에서 검색">'+IG_SVG+'</a>'+
+    '<a class="tcl gm" href="'+gm+'" target="_blank" rel="noopener" title="구글 지도에서 보기">'+GM_SVG+'</a>'+
+  '</div>';
+}
+function renderPlan(){
+  var w=document.getElementById('planWrap');
+  var P=PLAN;
+  var pct=Math.min(100, Math.round(P.total/S.survey.budget*100));
+  var over=P.total>S.survey.budget;
+  var partyTxt=S.users.length+(S.lang==='ko'?'명':' ppl');
+  var html='';
+  html+='<div class="plan-hero">'+
+    '<div class="scr-kick">'+tr('plan_kick')+'</div>'+
+    '<h2>'+(S.lang==='ko'?destName()+' '+P.nights+'박 '+(P.nights+1)+'일':destName()+' '+P.nights+'N / '+(P.nights+1)+'D')+'</h2>'+
+    '<div class="plan-meta">'+
+      chip(destList())+
+      chip(relationLabel())+chip(partyTxt)+chip(monthLabel())+
+      chip(purposeLabels())+chip(S.survey.transit==='car'?(S.lang==='ko'?'렌터카':'Car'):(S.lang==='ko'?'뚜벅이':'Transit'))+
+      chip(S.survey.pace==='relaxed'?(S.lang==='ko'?'느긋':'Relaxed'):(S.lang==='ko'?'알차게':'Packed'))+
+      chip(S.survey.visited==='again'?(S.lang==='ko'?'재방문':'Return'):(S.lang==='ko'?'첫방문':'First'))+
+    '</div></div>';
+
+  html+='<div class="budget-card">'+
+    '<div class="bc-top"><span>'+tr('plan_total')+'</span><b>¥'+P.total.toLocaleString()+'</b></div>'+
+    '<div class="bc-bar'+(over?' over':'')+'"><div class="bf" style="width:'+pct+'%"></div></div>'+
+    '<div class="bc-note">'+(over
+       ? (S.lang==='ko'?'예산(¥'+S.survey.budget.toLocaleString()+')을 살짝 넘었어. 무료 코스 위주로 바꿔줄까? → 다시 짜줘':'Slightly over budget (¥'+S.survey.budget.toLocaleString()+'). Want a cheaper mix? → Re-roll')
+       : (S.lang==='ko'?'예산(¥'+S.survey.budget.toLocaleString()+') 안에서 알차게 담았어. 남는 건 기념품각!':'Comfortably within your budget (¥'+S.survey.budget.toLocaleString()+'). Spend the rest on souvenirs!'))+'</div>'+
+    '</div>';
+
+  html+='<div class="day-tabs" id="dayTabs">';
+  P.days.forEach(function(dp,i){
+    html+='<div class="day-tab'+(i===0?' on':'')+'" data-d="'+i+'">'+(S.lang==='ko'?(dp.day+'일차'):('Day '+dp.day))+'</div>';
+  });
+  html+='</div>';
+
+  P.days.forEach(function(dp,i){
+    html+='<div class="day-panel'+(i===0?' on':'')+'" data-dp="'+i+'">';
+    var dh = dp.first?(S.lang==='ko'?'도착 & 워밍업':'Arrival & warm-up')
+            :dp.last?(S.lang==='ko'?'마무리 & 출발':'Last day & departure')
+            :(S.lang==='ko'?'본격 탐험':'Full exploration');
+    html+='<div class="day-head">'+(S.lang==='ko'?(dp.day+'일차 · '):('Day '+dp.day+' · '))+dh+'</div>';
+    html+='<div class="tl">';
+    dp.items.forEach(function(it,k){
+      var pn=(S.lang==='ko'?it.ko:it.en);
+      html+='<div class="tl-item" style="animation-delay:'+(k*0.05)+'s">'+
+        '<div class="tl-time">'+it.time+'</div>'+
+        '<div class="tl-rail"><div class="tl-icon'+(it.meal?' meal':'')+'"><img class="spr" src="'+SPR+it.icon+'.png"></div><div class="tl-line"></div></div>'+
+        '<div class="tl-card">'+
+          '<div class="tc-top"><div><div class="tc-name">'+pn+'</div>'+
+          '<div class="tc-area">'+((it.rko?((S.lang==='ko'?it.rko:it.ren)+' · '):'')+(S.lang==='ko'?it.areako:it.areaen))+'</div></div>'+
+          '<div class="tc-cost">'+(it.cost>0?('¥'+it.cost.toLocaleString()):(S.lang==='ko'?'무료':'Free'))+'</div></div>'+
+          '<div class="tc-desc">'+(S.lang==='ko'?it.dko:it.den)+'</div>'+
+          '<div class="tc-tip"><b>TIP </b>'+(S.lang==='ko'?it.tko:it.ten)+'</div>'+
+          placeLinks(pn, S.lang==='ko'?it.rko:it.ren)+
+        '</div></div>';
+    });
+    html+='</div></div>';
+  });
+
+  html+='<div class="plan-tipbox"><div class="pt-h">'+tr('tips_h')+'</div><ul>'+guideTips().map(function(t){return '<li>'+t+'</li>';}).join('')+'</ul></div>';
+
+  html+='<div class="plan-foot">'+
+    '<button class="btn gold" id="rerollBtn">'+tr('reroll')+'</button>'+
+    '<button class="btn" id="baseFromPlan">'+tr('base_btn')+'</button>'+
+    '<button class="btn ghost" id="restartBtn">'+tr('restart')+'</button>'+
+  '</div>';
+
+  w.innerHTML=html;
+
+  document.querySelectorAll('#dayTabs .day-tab').forEach(function(tab){
+    tab.onclick=function(){
+      var d=this.getAttribute('data-d');
+      document.querySelectorAll('#dayTabs .day-tab').forEach(function(x){x.classList.remove('on');});
+      this.classList.add('on');
+      document.querySelectorAll('.day-panel').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-dp')===d); });
+    };
+  });
+  document.getElementById('rerollBtn').onclick=function(){ PLAN=buildPlan(); renderPlan(); saveState('plan'); say(S.lang==='ko'?'새로 짰어! 이건 어때?':'Fresh route! How about this one?'); document.getElementById('plan').scrollTop=0; };
+  document.getElementById('restartBtn').onclick=function(){ resetAll(); show('title'); };
+  document.getElementById('baseFromPlan').onclick=function(){ show('basecamp'); };
+}
+function chip(txt){ return txt?('<div class="chip">'+txt+'</div>'):''; }
+function guideTips(){
+  var sv=S.survey, tips=[];
+  var ko=S.lang==='ko';
+  if([12,1,2].indexOf(sv.month)>=0) tips.push(ko?'한겨울이라 영하 추위 + 눈길! 방수 부츠랑 핫팩은 필수야.':'Deep winter means sub-zero cold and snowy roads — bring waterproof boots and hand warmers.');
+  else tips.push(ko?'초겨울/늦겨울이라 낮엔 견딜 만해도 밤은 쌀쌀해. 겉옷 단단히 챙겨.':'Early/late winter days are mild but nights bite — pack a solid coat.');
+  if(sv.transit==='car') tips.push(ko?'렌터카는 겨울 타이어 옵션 꼭 확인하고, 눈길 운전은 천천히!':'For a rental car, confirm winter tires and drive slow on snow.');
+  else tips.push(ko?'홋카이도는 도시 간 거리가 멀어. JR 패스나 시내 1일권을 잘 활용해.':'Hokkaido towns are far apart — use a JR pass or day tickets wisely.');
+  if(S.dests&&S.dests.length>1) tips.push(ko?'여러 지역을 골랐네! 이동 시간이 기니 같은 권역끼리 묶어 동선을 짜는 게 좋아.':'You picked several regions — group nearby ones to cut long transfers.');
+  if(sv.visited==='again') tips.push(ko?'재방문이니까 시레토코·왓카나이 같은 먼 지역이나 근교 온천도 노려봐.':'Been before? Aim for farther spots like Shiretoko or Wakkanai, or outer onsen.');
+  else tips.push(ko?'처음이라면 삿포로·오타루처럼 접근성 좋은 곳부터 즐기고, 야경 명소는 일몰 직전을 노려.':'First time? Start with easy spots like Sapporo/Otaru, and catch night views right before sunset.');
+  if(S.users.length>=4) tips.push(ko?'인원이 많으니 식당은 미리 예약해두면 마음 편해.':'Big group — reserve restaurants ahead to relax.');
+  tips.push(ko?'야경은 일몰 직전 “매직아워”가 제일 예뻐. 시간 꼭 체크!':'Night views shine brightest in the “magic hour” right before sunset — check the time!');
+  return tips;
+}
+
+/* ===================== CAMP (deco) ===================== */
+var CAMP_ITEMS=[
+  {id:'snowman',  src:'./Asset/el_snowman.png',  h:42, ko:'눈사람',  en:'Snowman'},
+  {id:'tree1',    src:'./sprites/tree1.png',     h:58, ko:'침엽수',  en:'Pine'},
+  {id:'tree2',    src:'./sprites/tree2.png',     h:54, ko:'눈나무',  en:'Snow tree'},
+  {id:'igloo',    src:'./sprites/igloo.png',     h:40, ko:'이글루',  en:'Igloo'},
+  {id:'cabin',    src:'./sprites/cabin.png',     h:50, ko:'통나무집', en:'Cabin'},
+  {id:'cathedral',src:'./sprites/cathedral.png', h:66, ko:'성당',    en:'Chapel'},
+  {id:'lantern',  src:'./sprites/lantern.png',   h:34, ko:'랜턴',    en:'Lantern'},
+  {id:'bush',     src:'./sprites/bush.png',      h:22, ko:'덤불',    en:'Bush'},
+  {id:'moon',     src:'./Asset/el_moon.png',     h:34, ko:'달',      en:'Moon'},
+  {id:'cloud',    src:'./sprites/cloud.png',     h:24, ko:'구름',    en:'Cloud'},
+  {id:'aurora',   src:'./Asset/el_aurora.png',   h:38, ko:'오로라',  en:'Aurora'}
+];
+function campItemById(id){ for(var i=0;i<CAMP_ITEMS.length;i++) if(CAMP_ITEMS[i].id===id) return CAMP_ITEMS[i]; return null; }
+/* placement points on the snowfield — x/y are % of stage; y is where the item's base stands */
+var CAMP_SLOTS=[
+  {x:50,y:14},{x:19,y:19},{x:82,y:16},                 /* sky 0–2 */
+  {x:13,y:57},{x:37,y:53},{x:63,y:55},{x:88,y:58},      /* back 3–6 */
+  {x:26,y:86},{x:50,y:92},{x:75,y:85}                   /* front 7–9 */
+];
+var campActive=0;        /* member index, or 'all' */
+var campSel=null;        /* selected palette item id, or 'eraser' */
+var campReturn='title';
+
+function enterCamp(){
+  setDock();
+  if(campSel==null) campSel=CAMP_ITEMS[0].id;
+  if(campActive!=='all' && (typeof campActive!=='number' || campActive>=S.users.length)) campActive=0;
+  if(S.npc) say(S.lang==='ko'?'다들 자기만의 눈밭을 가졌어! 소품을 골라서 마음껏 꾸며봐.':'Everyone gets their own snowfield! Pick props and decorate freely.');
+  renderCamp();
+}
+function buildStage(deco){
+  var st=document.createElement('div'); st.className='camp-stage';
+  var stars='<div class="stars" style="height:55%">';
+  for(var i=0;i<34;i++) stars+='<div class="star" style="left:'+(Math.random()*100).toFixed(1)+'%;top:'+(Math.random()*55).toFixed(1)+'%;animation-delay:'+(Math.random()*3).toFixed(1)+'s"></div>';
+  stars+='</div>';
+  st.innerHTML=stars+'<div class="cs-aurora"></div><div class="cs-ground"></div>';
+  return st;
+}
+function fillSlots(st, deco, interactive, mi){
+  CAMP_SLOTS.forEach(function(s,idx){
+    var itemId=deco?deco[idx]:null;
+    if(!interactive && !itemId) return;   /* showcase view: only placed props */
+    var slot=document.createElement('div'); slot.className='cs-slot';
+    slot.setAttribute('data-idx',idx);
+    slot.style.left=s.x+'%'; slot.style.top=s.y+'%'; slot.style.zIndex=Math.round(s.y);
+    paintSlot(slot, itemId);
+    if(interactive) slot.onclick=function(){ placeAt(mi, idx); };
+    st.appendChild(slot);
+  });
+}
+function paintSlot(slot, itemId){
+  var it=itemId?campItemById(itemId):null;
+  if(it){ slot.classList.add('filled');
+    slot.innerHTML='<img class="spr" src="'+it.src+'" style="height:'+it.h+'px;width:auto">';
+  } else { slot.classList.remove('filled'); slot.innerHTML='<div class="ph">+</div>'; }
+}
+function placeAt(mi, si){
+  var u=S.users[mi]; if(!u) return;
+  if(!u.deco) u.deco={};
+  if(campSel==='eraser'){
+    if(u.deco[si]==null) return;
+    delete u.deco[si]; campComment(u.name, null, 'clear');
+  } else {
+    u.deco[si]=campSel; campComment(u.name, campItemById(campSel), 'place');
+  }
+  var slot=document.querySelector('#campMain .cs-slot[data-idx="'+si+'"]');
+  if(slot) paintSlot(slot, u.deco[si]);
+  saveState('camp');
+}
+function campComment(name, item, action){
+  if(!S.npc) return;
+  var ko=S.lang==='ko';
+  var line;
+  if(action==='clear'){
+    line=ko? name+'의 자리에서 하나 치웠어. 다시 꾸며보자!' : 'Cleared a spot in '+name+'’s camp. Let’s redo it!';
+  } else {
+    var t=item?(ko?item.ko:item.en):'';
+    var pool=ko?[
+      name+'의 눈밭에 '+t+'! 분위기 산다.',
+      t+', 좋은 선택이야. '+name+'(이)랑 잘 어울려.',
+      '오, '+t+'(을)를 여기에? '+name+' 센스 있네!',
+      name+'의 캠프가 점점 예뻐지는걸?'
+    ]:[
+      name+'’s snowfield gets a '+t+'! Nice.',
+      'Good pick — '+t+' suits '+name+'.',
+      'Ooh, a '+t+' right there? '+name+' has taste!',
+      name+'’s camp keeps getting prettier!'
+    ];
+    line=pool[Math.floor(Math.random()*pool.length)];
+  }
+  say(line);
+}
+function renderCamp(){
+  var tabs=document.getElementById('campTabs'); tabs.innerHTML='';
+  S.users.forEach(function(u,i){
+    var t=document.createElement('div'); t.className='camp-tab'+(campActive===i?' on':'');
+    t.textContent=u.name+(i===0?' ♛':'');
+    t.onclick=function(){ campActive=i; renderCamp(); };
+    tabs.appendChild(t);
+  });
+  var all=document.createElement('div'); all.className='camp-tab all'+(campActive==='all'?' on':'');
+  all.textContent=(S.lang==='ko'?'다같이':'All');
+  all.onclick=function(){ campActive='all'; renderCamp(); };
+  tabs.appendChild(all);
+
+  var main=document.getElementById('campMain'); main.innerHTML='';
+  if(campActive==='all') renderCampAll(main);
+  else renderCampEdit(main, campActive);
+}
+function renderCampEdit(main, mi){
+  var u=S.users[mi]; if(!u){ main.textContent=''; return; }
+  if(!u.deco) u.deco={};
+  var wrap=document.createElement('div'); wrap.className='stage-wrap';
+  var st=buildStage(u.deco); fillSlots(st, u.deco, true, mi);
+  wrap.appendChild(st); main.appendChild(wrap);
+
+  var box=document.createElement('div'); box.className='items-panel';
+  var ititle=document.createElement('div'); ititle.className='items-title';
+  ititle.textContent=S.lang==='ko'?'소품':'ITEMS';
+  box.appendChild(ititle);
+  var pal=document.createElement('div'); pal.className='camp-palette';
+  CAMP_ITEMS.forEach(function(it){
+    var p=document.createElement('div'); p.className='pal-item'+(campSel===it.id?' sel':'');
+    p.innerHTML='<img class="spr" src="'+it.src+'"><div class="pl-name">'+(S.lang==='ko'?it.ko:it.en)+'</div>';
+    p.onclick=function(){ campSel=it.id; renderCamp(); };
+    pal.appendChild(p);
+  });
+  var er=document.createElement('div'); er.className='pal-item eraser'+(campSel==='eraser'?' sel':'');
+  er.innerHTML='✕<div class="pl-name">'+(S.lang==='ko'?'지우개':'Erase')+'</div>';
+  er.onclick=function(){ campSel='eraser'; renderCamp(); };
+  pal.appendChild(er);
+  box.appendChild(pal);
+  main.appendChild(box);
+
+  var hint=document.createElement('div'); hint.className='camp-hint';
+  hint.textContent=S.lang==='ko'?'소품을 고른 뒤 눈밭의 빈 자리(＋)를 눌러 놓아봐. 지우개로 치울 수 있어.':'Pick a prop, then tap an empty spot (＋). Use the eraser to remove.';
+  main.appendChild(hint);
+  fitStage(wrap, 1);
+}
+function renderCampAll(main){
+  var grid=document.createElement('div'); grid.className='camp-all';
+  S.users.forEach(function(u,i){
+    var card=document.createElement('div'); card.className='camp-card';
+    var mw=document.createElement('div'); mw.className='mini-wrap';
+    var st=buildStage(u.deco||{}); fillSlots(st, u.deco||{}, false, i);
+    st.style.pointerEvents='none'; mw.appendChild(st); card.appendChild(mw);
+    var nm=document.createElement('div'); nm.className='cc-name';
+    nm.innerHTML=u.name+(i===0?'<span class="lead">'+(S.lang==='ko'?'대장':'LEAD')+'</span>':'');
+    card.appendChild(nm);
+    card.onclick=function(){ campActive=i; renderCamp(); };
+    grid.appendChild(card);
+    fitStage(mw, 0.48);
+  });
+  main.appendChild(grid);
+  var hint=document.createElement('div'); hint.className='camp-hint';
+  hint.textContent=S.lang==='ko'?'카드를 누르면 그 친구의 눈밭을 꾸밀 수 있어.':'Tap a card to decorate that friend’s snowfield.';
+  main.appendChild(hint);
+}
+function fitStage(wrap, maxScale){
+  var st=wrap.querySelector('.camp-stage'); if(!st) return;
+  var scale=maxScale;
+  if(maxScale>=1){
+    var cw=document.getElementById('campMain').clientWidth;
+    if(!cw||cw<40) cw=360;
+    var avail=Math.min(420, cw);
+    scale=Math.min(1,(avail-6)/360);
+  }
+  st.style.transform='scale('+scale+')';
+  wrap.style.width=(360*scale)+'px';
+  wrap.style.height=(260*scale)+'px';
+}
+window.addEventListener('resize',function(){ if(current==='camp' && campActive!=='all'){ var w=document.querySelector('#campMain .stage-wrap'); if(w) fitStage(w,1); } });
+
+/* ===================== BASE CAMP (hub) ===================== */
+function enterBasecamp(){
+  setDock();
+  if(S.npc) say(S.lang==='ko'?'베이스캠프야! 대원들이랑 여행 작전을 한눈에 볼 수 있어.':'Base camp! Your crew and trip plan at a glance.');
+  renderBasecamp();
+}
+function renderBasecamp(){
+  var w=document.getElementById('baseWrap'); w.innerHTML='';
+  var ko=S.lang==='ko';
+
+  /* framed scenery banner — pure ambience */
+  var hero=document.createElement('div'); hero.className='bc-hero';
+  hero.innerHTML='<img src="./Examples/1.gif" alt="">'+
+    '<div class="bc-plate">'+(ko?'❄ 눈길원정대 베이스캠프':'❄ SNOW QUEST BASE CAMP')+'</div>';
+  w.appendChild(hero);
+
+  /* guide + destinations */
+  if(S.npc){
+    var g=npcById(S.npc);
+    var gd=document.createElement('div'); gd.className='bc-guide';
+    var chips=(S.dests&&S.dests.length)
+      ? S.dests.map(function(id){var r=regionById(id);return '<div class="chip">'+(r?(ko?r.ko:r.en):id)+'</div>';}).join('')
+      : '<div class="chip">'+(ko?'목적지 미정':'TBD')+'</div>';
+    gd.innerHTML=
+      '<div class="bc-portrait"><img class="spr" src="'+SPR+g.img+'" style="height:'+Math.min(g.gh||60,62)+'px;width:auto"></div>'+
+      '<div class="bc-gtext"><div class="bc-gname">'+L(g.name)+'</div><div class="bc-grole">'+L(g.role)+'</div>'+
+      '<div class="bc-dests">'+chips+'</div></div>';
+    w.appendChild(gd);
+  }
+
+  /* trip briefing (survey summary) */
+  var sec1=document.createElement('div'); sec1.className='bc-sec'; sec1.innerHTML=tr('base_op'); w.appendChild(sec1);
+  var op=document.createElement('div'); op.className='bc-op';
+  var sv=S.survey, bits=[];
+  bits.push(chip(relationLabel()));
+  bits.push(chip(S.users.length+(ko?'명':' ppl')));
+  if(sv.month) bits.push(chip(monthLabel()));
+  if(sv.purposes&&sv.purposes.length) bits.push(chip(purposeLabels()));
+  bits.push(chip(sv.nights+(ko?'박 '+(sv.nights+1)+'일':'N/'+(sv.nights+1)+'D')));
+  if(sv.transit) bits.push(chip(sv.transit==='car'?(ko?'렌터카':'Car'):(ko?'뚜벅이':'Transit')));
+  if(sv.pace) bits.push(chip(sv.pace==='relaxed'?(ko?'느긋':'Relaxed'):(ko?'알차게':'Packed')));
+  if(sv.visited) bits.push(chip(sv.visited==='again'?(ko?'재방문':'Return'):(ko?'첫방문':'First')));
+  bits.push(chip('¥'+(sv.budget||0).toLocaleString()+(ko?' /1인':' /pp')));
+  op.innerHTML=bits.join('');
+  w.appendChild(op);
+
+  /* crew roster */
+  var sec2=document.createElement('div'); sec2.className='bc-sec';
+  sec2.innerHTML=tr('base_roster')+' <b>'+S.users.length+'</b>';
+  w.appendChild(sec2);
+  var roster=document.createElement('div'); roster.className='bc-roster';
+  S.users.forEach(function(u,idx){
+    if(!u.deco) u.deco={};
+    var card=document.createElement('div'); card.className='bc-member';
+    var top=document.createElement('div'); top.className='bc-m-top';
+    top.innerHTML='<div class="bc-m-ava"><img class="spr" src="./Asset/el_snowman.png"></div>'+
+      '<div class="bc-m-name">'+u.name+'</div>'+
+      (idx===0?'<div class="bc-m-lead">'+(ko?'대장':'LEAD')+'</div>':'');
+    card.appendChild(top);
+    var mini=document.createElement('div'); mini.className='bc-m-mini';
+    var st=buildStage(u.deco); fillSlots(st, u.deco, false, idx); st.style.pointerEvents='none';
+    mini.appendChild(st); card.appendChild(mini);
+    var cmt=document.createElement('input'); cmt.className='bc-comment'; cmt.maxLength=40;
+    cmt.placeholder=tr('base_cmt_ph'); cmt.value=u.comment||'';
+    cmt.oninput=function(){ u.comment=this.value; saveState('basecamp'); };
+    card.appendChild(cmt);
+    var deco=document.createElement('button'); deco.className='bc-m-deco'; deco.textContent='✎ '+tr('base_deco');
+    deco.onclick=function(){ campReturn='basecamp'; campActive=idx; show('camp'); };
+    card.appendChild(deco);
+    roster.appendChild(card);
+    fitStage(mini, 0.42);
+  });
+  w.appendChild(roster);
+
+  /* footer actions */
+  var foot=document.createElement('div'); foot.className='bc-foot';
+  var resume=document.createElement('button'); resume.className='btn gold'; resume.textContent=tr('base_resume');
+  resume.onclick=goResume;
+  foot.appendChild(resume);
+  if(PLAN){
+    var pv=document.createElement('button'); pv.className='btn'; pv.textContent=tr('base_plan');
+    pv.onclick=function(){ show('plan'); };
+    foot.appendChild(pv);
+  }
+  var rs=document.createElement('button'); rs.className='btn ghost'; rs.textContent=tr('restart');
+  rs.onclick=function(){ resetAll(); show('title'); };
+  foot.appendChild(rs);
+  w.appendChild(foot);
+}
+function goResume(){
+  var s=loadSave();
+  var t=(s&&s.flow)?s.flow:'guide';
+  if(t==='plan'&&!PLAN) t='survey';
+  show(t);
+}
+
+/* ===================== RESET ===================== */
+function resetAll(){
+  S.npc=null; S.users=[]; S.dest='hakodate'; S.dests=[]; S.route=[];
+  S.survey={ relation:null, purposes:[], budget:40000, visited:null, nights:2, month:null, transit:null, pace:null };
+  document.getElementById('guideNext').disabled=true;
+  buildGuides();
+  document.getElementById('dock').classList.remove('show');
+}
+
+/* ===================== LANGUAGE ===================== */
+function applyLang(){
+  document.documentElement.lang=S.lang;
+  document.querySelectorAll('[data-t]').forEach(function(el){ el.innerHTML=tr(el.getAttribute('data-t')); });
+  document.querySelectorAll('[data-ph]').forEach(function(el){ el.setAttribute('placeholder', tr(el.getAttribute('data-ph'))); });
+  buildGuides();
+  if(S.npc) setDock();
+  if(current==='party') renderUsers();
+  if(current==='survey') renderSurvey();
+  if(current==='map'){ mapBuilt=false; enterMap(); }
+  if(current==='plan') renderPlan();
+  if(current==='camp') renderCamp();
+  if(current==='basecamp') renderBasecamp();
+}
+
+/* ===================== START ===================== */
+document.getElementById('startBtn').onclick=function(){ resetAll(); show('guide'); };
+document.getElementById('baseBtn').onclick=function(){
+  var s=loadSave();
+  if(s){
+    S.lang=s.lang||S.lang; S.npc=s.npc||S.npc; S.users=s.users||[]; S.dest=s.dest||S.dest; S.dests=s.dests||[];
+    S.route=s.route||[]; if((!S.route.length)&&S.dests.length) S.route=S.dests.slice(); syncDests();
+    if(s.survey) S.survey=s.survey; PLAN=s.plan||PLAN;
+    buildGuides(); document.getElementById('guideNext').disabled=!S.npc; if(S.npc) setDock();
+  }
+  if(!S.users.length){ resetAll(); show('guide'); return; }
+  show('basecamp');
+};
+document.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ')&&current==='title'){ resetAll(); show('guide'); } });
+
+/* init */
+buildGuides();
+applyLang();
+refreshTitle();
+document.getElementById('title').classList.add('shown');
+</script>
+</body>
+</html>
