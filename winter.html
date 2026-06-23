@@ -587,8 +587,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 #authgate{position:fixed;inset:0;z-index:100;background:radial-gradient(120% 90% at 50% 0%,#0d1620,#070b0e 70%);
   display:flex;align-items:center;justify-content:center;padding:24px;}
 #authgate.hide{display:none;}
-.ag-card{width:100%;max-width:360px;background:var(--panel);border:3px solid var(--ice-d);
-  box-shadow:0 0 0 3px var(--black),0 10px 40px rgba(0,0,0,.6);padding:30px 24px;text-align:center;animation:floatUp .4s ease;}
+.ag-card{position:relative;width:100%;max-width:360px;background:var(--panel);border:3px solid var(--ice-d);
+  box-shadow:0 0 0 3px var(--black),0 10px 40px rgba(0,0,0,.6);padding:30px 24px;text-align:center;animation:floatUp .4s ease;
+  max-height:90vh;overflow-y:auto;}
 .ag-logo{font-size:34px;margin-bottom:6px;}
 .ag-title{font-size:24px;font-weight:800;color:var(--ice);letter-spacing:2px;margin-bottom:6px;}
 .ag-sub{font-size:13px;color:var(--g4);line-height:1.5;margin-bottom:20px;}
@@ -606,6 +607,31 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .ag-prof .agp-name{font-size:17px;font-weight:800;color:var(--white);}
 .ag-prof .agp-badge{margin-left:auto;font-size:11px;font-weight:800;color:var(--gold);
   border:2px solid var(--gold-d);padding:2px 7px;}
+/* forgot-password quiz */
+.ag-forgot{margin-top:16px;font-size:12px;color:var(--g3);cursor:pointer;text-decoration:underline;}
+.ag-forgot:hover{color:var(--ice);}
+.ag-quiz{text-align:left;}
+.agq-item{margin-bottom:16px;}
+.agq-q{font-size:13px;font-weight:800;color:var(--white);margin-bottom:8px;}
+.agq-q b{color:var(--ice);}
+.agq-opts{display:flex;flex-direction:column;gap:6px;}
+.agq-opt{font-size:13px;color:var(--g4);background:var(--panel-2);border:2px solid var(--line);
+  padding:8px 10px;cursor:pointer;transition:.1s;}
+.agq-opt:hover{border-color:var(--ice-d);}
+.agq-opt.sel{border-color:var(--ice);color:var(--ice);background:#0e2630;}
+.agq-result{font-size:12px;margin-top:6px;min-height:16px;color:var(--red-l);}
+.ag-hint{background:#1a1407;border:2px solid var(--gold-d);padding:14px;margin-top:6px;
+  color:var(--gold);font-weight:800;font-size:15px;text-align:center;line-height:1.5;}
+.ag-back{margin-top:14px;font-size:12px;color:var(--g3);cursor:pointer;text-decoration:underline;}
+.ag-back:hover{color:var(--ice);}
+/* 5-minute lockout overlay */
+#agLock{position:absolute;inset:0;background:rgba(7,11,14,.95);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;z-index:5;}
+#agLock.hide{display:none;}
+.agl-icon{font-size:38px;}
+.agl-title{color:var(--red-l);font-weight:800;font-size:17px;}
+.agl-sub{color:var(--g4);font-size:12px;line-height:1.5;}
+.agl-time{color:var(--gold);font-weight:800;font-size:30px;letter-spacing:2px;font-variant-numeric:tabular-nums;}
 
 /* ===== sync status bar (top-right) ===== */
 #syncbar{position:fixed;top:14px;right:14px;z-index:70;display:none;align-items:center;gap:8px;
@@ -2458,10 +2484,25 @@ function buildGate(){
         '<input id="agPass" class="inp" type="password" placeholder="공용 암호" autocomplete="off">'+
         '<button id="agPassBtn" class="btn gold">입장</button>'+
         '<div id="agErr" class="ag-err"></div>'+
+        '<div class="ag-forgot" id="agForgot">암호를 잊어버렸어?</div>'+
       '</div>'+
       '<div id="agStep2" style="display:none">'+
         '<div class="ag-sub2">넌 누구야?</div>'+
         '<div class="ag-profiles" id="agProfiles"></div>'+
+      '</div>'+
+      '<div id="agStep3" style="display:none">'+
+        '<div class="ag-sub2" id="agQuizHead">암호 찾기 퀴즈 · 3문제 모두 맞히면 힌트!</div>'+
+        '<div class="ag-quiz" id="agQuiz"></div>'+
+        '<div class="ag-hint" id="agHint" style="display:none"></div>'+
+        '<button id="agQuizBtn" class="btn gold">정답 확인</button>'+
+        '<div class="agq-result" id="agQuizResult"></div>'+
+        '<div class="ag-back" id="agBack">‹ 암호 입력으로</div>'+
+      '</div>'+
+      '<div id="agLock" class="hide">'+
+        '<div class="agl-icon">🔒</div>'+
+        '<div class="agl-title">서버 잠금</div>'+
+        '<div class="agl-sub">퀴즈를 틀려서 5분간 잠겼어.<br>잠시 후 다시 시도해줘.</div>'+
+        '<div class="agl-time" id="aglTime">5:00</div>'+
       '</div>'+
     '</div>';
   document.getElementById('app').appendChild(g);
@@ -2473,6 +2514,77 @@ function buildGate(){
   }
   passBtn.onclick=tryPass;
   pass.addEventListener('keydown',function(e){ if(e.key==='Enter') tryPass(); });
+
+  /* ---- forgot-password quiz + 5min server lock ---- */
+  var QUIZ=[
+    { q:'하은이의 출신지는?', opts:['대전','대구','서울','제주도','기오이초'], a:1 },
+    { q:'승은이가 가장 좋아하는 음식은?', opts:['녹차','망고','시소','연어','인스턴트'], a:4 },
+    { q:'다음 중 은재의 취미가 아닌 것은?', opts:['가라오케','음악 감상','운동','집 청소','책 읽기'], a:4 }
+  ];
+  var quizPick={}, lockTimer=null;
+  function lockRemaining(){ try{ return Math.max(0,(+localStorage.getItem('sq_lock_until')||0)-Date.now()); }catch(e){ return 0; } }
+  function fmt(ms){ var s=Math.ceil(ms/1000); return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2); }
+  function showLock(){
+    var lock=g.querySelector('#agLock'); lock.classList.remove('hide');
+    function tick(){
+      var r=lockRemaining();
+      if(r<=0){ lock.classList.add('hide'); if(lockTimer){clearInterval(lockTimer);lockTimer=null;} return; }
+      g.querySelector('#aglTime').textContent=fmt(r);
+    }
+    tick(); if(lockTimer) clearInterval(lockTimer); lockTimer=setInterval(tick,1000);
+  }
+  function showQuiz(){
+    g.querySelector('#agStep1').style.display='none';
+    g.querySelector('#agStep2').style.display='none';
+    g.querySelector('#agStep3').style.display='block';
+    g.querySelector('#agQuizHead').textContent='암호 찾기 퀴즈 · 3문제 모두 맞히면 힌트!';
+    g.querySelector('#agHint').style.display='none';
+    g.querySelector('#agQuizBtn').style.display='';
+    g.querySelector('#agQuizResult').textContent='';
+    quizPick={};
+    var box=g.querySelector('#agQuiz'); box.style.display=''; box.innerHTML='';
+    QUIZ.forEach(function(item,qi){
+      var it=document.createElement('div'); it.className='agq-item';
+      var html='<div class="agq-q">Q'+(qi+1)+'. '+item.q+'</div><div class="agq-opts">';
+      item.opts.forEach(function(o,oi){ html+='<div class="agq-opt" data-q="'+qi+'" data-o="'+oi+'">'+(oi+1)+'. '+o+'</div>'; });
+      it.innerHTML=html+'</div>'; box.appendChild(it);
+    });
+    box.querySelectorAll('.agq-opt').forEach(function(el){
+      el.onclick=function(){
+        var qi=+el.getAttribute('data-q'), oi=+el.getAttribute('data-o');
+        quizPick[qi]=oi;
+        box.querySelectorAll('.agq-opt[data-q="'+qi+'"]').forEach(function(s){ s.classList.remove('sel'); });
+        el.classList.add('sel');
+      };
+    });
+  }
+  function submitQuiz(){
+    if(lockRemaining()>0){ showLock(); return; }
+    var res=g.querySelector('#agQuizResult');
+    if(Object.keys(quizPick).length<QUIZ.length){ res.style.color='var(--g4)'; res.textContent='모든 문제를 골라줘.'; return; }
+    var allRight=QUIZ.every(function(item,qi){ return quizPick[qi]===item.a; });
+    if(allRight){
+      g.querySelector('#agQuizHead').textContent='정답! 🎉 암호 힌트야';
+      g.querySelector('#agQuiz').style.display='none';
+      g.querySelector('#agQuizBtn').style.display='none';
+      res.textContent='';
+      var hint=g.querySelector('#agHint'); hint.style.display='block';
+      hint.innerHTML='🎂 은재의 생년월일<br><span style="font-size:11px;color:var(--g4);font-weight:400">(숫자 8자리 · YYYYMMDD)</span>';
+    } else {
+      try{ localStorage.setItem('sq_lock_until', ''+(Date.now()+5*60*1000)); }catch(e){}
+      showLock();
+    }
+  }
+  function backToPass(){
+    g.querySelector('#agStep3').style.display='none';
+    g.querySelector('#agStep2').style.display='none';
+    g.querySelector('#agStep1').style.display='block';
+    err.textContent=''; setTimeout(function(){ pass.focus(); },0);
+  }
+  g.querySelector('#agForgot').onclick=function(){ if(lockRemaining()>0){ showLock(); return; } showQuiz(); };
+  g.querySelector('#agQuizBtn').onclick=submitQuiz;
+  g.querySelector('#agBack').onclick=backToPass;
+  if(lockRemaining()>0) showLock();   /* still locked from before */
 
   function showProfiles(){
     g.querySelector('#agStep1').style.display='none';
