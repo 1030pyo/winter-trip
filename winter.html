@@ -582,7 +582,48 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
   #party,#map,#survey{padding-bottom:160px;}
   #guide{padding-bottom:48px;}
 }
+
+/* ===== auth gate (공용 암호 + 프로필 선택) ===== */
+#authgate{position:fixed;inset:0;z-index:100;background:radial-gradient(120% 90% at 50% 0%,#0d1620,#070b0e 70%);
+  display:flex;align-items:center;justify-content:center;padding:24px;}
+#authgate.hide{display:none;}
+.ag-card{width:100%;max-width:360px;background:var(--panel);border:3px solid var(--ice-d);
+  box-shadow:0 0 0 3px var(--black),0 10px 40px rgba(0,0,0,.6);padding:30px 24px;text-align:center;animation:floatUp .4s ease;}
+.ag-logo{font-size:34px;margin-bottom:6px;}
+.ag-title{font-size:24px;font-weight:800;color:var(--ice);letter-spacing:2px;margin-bottom:6px;}
+.ag-sub{font-size:13px;color:var(--g4);line-height:1.5;margin-bottom:20px;}
+.ag-sub2{font-size:14px;color:var(--white);font-weight:700;margin-bottom:14px;}
+#agPass{width:100%;text-align:center;margin-bottom:12px;letter-spacing:3px;}
+#agPassBtn{width:100%;}
+.ag-err{color:var(--red-l);font-size:12px;margin-top:10px;min-height:16px;}
+.ag-profiles{display:flex;flex-direction:column;gap:10px;}
+.ag-prof{display:flex;align-items:center;gap:12px;cursor:pointer;background:var(--panel-2);
+  border:3px solid var(--line);padding:12px 14px;transition:.12s;text-align:left;}
+.ag-prof:hover{border-color:var(--ice);transform:translateY(-1px);}
+.ag-prof .agp-av{width:34px;height:34px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  background:var(--ice-d);font-size:16px;font-weight:800;color:var(--black);}
+.ag-prof.master .agp-av{background:var(--gold);}
+.ag-prof .agp-name{font-size:17px;font-weight:800;color:var(--white);}
+.ag-prof .agp-badge{margin-left:auto;font-size:11px;font-weight:800;color:var(--gold);
+  border:2px solid var(--gold-d);padding:2px 7px;}
+
+/* ===== sync status bar (top-right) ===== */
+#syncbar{position:fixed;top:14px;right:14px;z-index:70;display:none;align-items:center;gap:8px;
+  background:rgba(13,19,25,.82);border:2px solid var(--line);padding:5px 10px;font-size:12px;color:var(--g4);
+  box-shadow:0 0 0 2px var(--black);}
+#syncbar.show{display:flex;}
+#syncbar .sb-me{color:var(--white);font-weight:800;}
+#syncbar .sb-dot{width:8px;height:8px;border-radius:50%;background:#5fe08a;box-shadow:0 0 6px #5fe08a;}
+#syncbar .sb-dot.off{background:var(--g2);box-shadow:none;}
+#syncbar .sb-master{color:var(--gold);font-weight:800;}
+#syncbar .sb-edit{color:var(--g3);}
+#syncbar .sb-admin{cursor:pointer;color:var(--gold);font-size:14px;background:none;border:none;padding:0 2px;}
+#syncbar .sb-admin:hover{color:var(--ice);}
 </style>
+<!-- Firebase (compat SDK via CDN — no build step) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div id="app">
@@ -851,6 +892,7 @@ function saveState(scr){
       plan:PLAN, screen:scr, flow:flow
     }));
   }catch(e){}
+  schedulePush();          /* mirror shared trip state to Firestore */
 }
 function loadSave(){
   try{ var raw=localStorage.getItem(SAVE_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
@@ -2286,13 +2328,201 @@ document.getElementById('baseBtn').onclick=function(){
   if(!S.users.length){ resetAll(); show('guide'); return; }
   show('basecamp');
 };
-document.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ')&&current==='title'){ resetAll(); show('guide'); } });
+document.addEventListener('keydown',function(e){
+  var ag=document.getElementById('authgate');
+  if(ag && !ag.classList.contains('hide')) return;          /* gate is up */
+  if((e.key==='Enter'||e.key===' ')&&current==='title'){ resetAll(); show('guide'); }
+});
+
+/* ===================== REALTIME SYNC (Firebase) ===================== */
+var FB_CONFIG = {
+  apiKey: "AIzaSyAEE7vcUmdoq3b6shmOill3ZhX6givyidM",
+  authDomain: "snowquest-8fcc6.firebaseapp.com",
+  projectId: "snowquest-8fcc6",
+  storageBucket: "snowquest-8fcc6.firebasestorage.app",
+  messagingSenderId: "214448295856",
+  appId: "1:214448295856:web:4bced703e97efc3bf69075"
+};
+var GATE_PASS = "snow2026";                 /* 공용 암호 */
+var PROFILES = [
+  { name:'하은', role:'member' },
+  { name:'승은', role:'member' },
+  { name:'은재', role:'master' }            /* 관리자 */
+];
+var SYNC = { ok:false, online:false, db:null, ref:null, me:null,
+  clientId:(''+(window.performance&&performance.now?performance.now():0)+Math.random()).replace('.',''),
+  applying:false, enabled:false, lastEditor:null, _t:null };
+
+function initFirebase(){
+  if(SYNC.db || typeof firebase==='undefined') return;
+  try{
+    firebase.initializeApp(FB_CONFIG);
+    SYNC.db = firebase.firestore();
+    SYNC.ref = SYNC.db.collection('trips').doc('hokkaido');
+  }catch(e){ console.warn('firebase init failed', e); }
+}
+function sharedPayload(extra){
+  var p = { npc:S.npc||null, users:S.users||[], dest:S.dest||null, dests:S.dests||[],
+    route:S.route||[], survey:S.survey||{}, plan:(typeof PLAN!=='undefined'?(PLAN||null):null) };
+  if(extra) for(var k in extra) p[k]=extra[k];
+  return p;
+}
+function schedulePush(){
+  if(!SYNC.enabled || SYNC.applying || !SYNC.ref) return;
+  if(SYNC._t) clearTimeout(SYNC._t);
+  SYNC._t = setTimeout(pushNow, 400);
+}
+function pushNow(){
+  if(!SYNC.ref || !SYNC.enabled) return;
+  SYNC.ref.set(sharedPayload({
+    updatedBy:(SYNC.me&&SYNC.me.name)||'?', updatedClient:SYNC.clientId,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  }), {merge:true}).catch(function(e){ console.warn('sync push failed', e); });
+}
+function applyRemote(d){
+  SYNC.applying = true;
+  if('npc' in d) S.npc = d.npc;
+  if(d.users) S.users = d.users;
+  if(d.dest) S.dest = d.dest;
+  if(d.route) S.route = d.route;
+  if(d.survey) S.survey = d.survey;
+  if('plan' in d) PLAN = d.plan;
+  if(typeof syncDests==='function') syncDests(); else if(d.dests) S.dests=d.dests;
+  try{ saveState(current); }catch(e){}
+  rerenderCurrent();
+  SYNC.applying = false;
+}
+function rerenderCurrent(){
+  try{
+    buildGuides();
+    var gn=document.getElementById('guideNext'); if(gn) gn.disabled=!S.npc;
+    if(S.npc) setDock();
+    if(current==='party') renderUsers();
+    else if(current==='map'){ if(typeof renderMarkers==='function'){ renderMarkers(); drawRoute(); updateBoard(); updateMapFoot(); } }
+    else if(current==='survey') renderSurvey();
+    else if(current==='plan') renderPlan();
+    else if(current==='basecamp') renderBasecamp();
+  }catch(e){ console.warn('rerender failed', e); }
+}
+function subscribeTrip(){
+  if(!SYNC.ref) return;
+  SYNC.ref.onSnapshot(function(doc){
+    if(doc.exists){
+      var d=doc.data();
+      SYNC.lastEditor = d.updatedBy || null;
+      if(d.updatedClient !== SYNC.clientId) applyRemote(d);   /* skip our own echo */
+    }
+    SYNC.enabled = true;        /* safe to push only after first snapshot hydrates state */
+    updateSyncBar();
+  }, function(err){ console.warn('snapshot error', err); SYNC.online=false; updateSyncBar(); });
+}
+function updateSyncBar(){
+  var bar=document.getElementById('syncbar'); if(!bar||!SYNC.me) return;
+  bar.classList.add('show');
+  var ko=S.lang==='ko';
+  document.getElementById('sbMe').innerHTML =
+    '<span class="sb-dot'+(SYNC.online?'':' off')+'"></span><span class="sb-me">'+SYNC.me.name+'</span>'+
+    (SYNC.me.role==='master'?' <span class="sb-master">🛡 '+(ko?'관리자':'admin')+'</span>':'');
+  var ed=document.getElementById('sbEdit');
+  ed.className='sb-edit';
+  ed.textContent = (SYNC.lastEditor && SYNC.lastEditor!==SYNC.me.name) ? ('✏ '+SYNC.lastEditor) : '';
+  document.getElementById('sbAdmin').style.display = (SYNC.me.role==='master') ? 'inline-block':'none';
+}
+function adminResetTrip(){
+  if(!SYNC.me || SYNC.me.role!=='master') return;
+  if(!confirm(S.lang==='ko'?'여행 전체를 초기화할까? (셋 모두의 화면에서 지워져)':'Reset the whole trip for everyone?')) return;
+  resetAll();
+  if(SYNC.ref){
+    SYNC.ref.set(sharedPayload({ updatedBy:SYNC.me.name, updatedClient:SYNC.clientId,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp() }), {merge:true});
+  }
+  show('title');
+}
+
+/* ---- auth gate: 공용 암호 → 프로필 선택 ---- */
+function buildGate(){
+  /* sync bar */
+  var sb=document.createElement('div'); sb.id='syncbar';
+  sb.innerHTML='<span id="sbMe"></span><span id="sbEdit" class="sb-edit"></span><button id="sbAdmin" class="sb-admin" title="여행 초기화" style="display:none">⚙</button>';
+  document.getElementById('app').appendChild(sb);
+  sb.querySelector('#sbAdmin').onclick=adminResetTrip;
+
+  /* gate overlay */
+  var g=document.createElement('div'); g.id='authgate';
+  g.innerHTML=
+    '<div class="ag-card">'+
+      '<div class="ag-logo">❄</div>'+
+      '<div class="ag-title">눈길원정대</div>'+
+      '<div class="ag-sub">우리 셋의 홋카이도 — 입장하려면 공용 암호를 입력해</div>'+
+      '<div id="agStep1">'+
+        '<input id="agPass" class="inp" type="password" placeholder="공용 암호" autocomplete="off">'+
+        '<button id="agPassBtn" class="btn gold">입장</button>'+
+        '<div id="agErr" class="ag-err"></div>'+
+      '</div>'+
+      '<div id="agStep2" style="display:none">'+
+        '<div class="ag-sub2">넌 누구야?</div>'+
+        '<div class="ag-profiles" id="agProfiles"></div>'+
+      '</div>'+
+    '</div>';
+  document.getElementById('app').appendChild(g);
+
+  var pass=g.querySelector('#agPass'), passBtn=g.querySelector('#agPassBtn'), err=g.querySelector('#agErr');
+  function tryPass(){
+    if(pass.value===GATE_PASS){ try{ localStorage.setItem('sq_gate_ok','1'); }catch(e){} showProfiles(); }
+    else { err.textContent='암호가 틀렸어'; pass.value=''; pass.focus(); }
+  }
+  passBtn.onclick=tryPass;
+  pass.addEventListener('keydown',function(e){ if(e.key==='Enter') tryPass(); });
+
+  function showProfiles(){
+    g.querySelector('#agStep1').style.display='none';
+    g.querySelector('#agStep2').style.display='block';
+    var box=g.querySelector('#agProfiles'); box.innerHTML='';
+    PROFILES.forEach(function(p){
+      var el=document.createElement('div'); el.className='ag-prof'+(p.role==='master'?' master':'');
+      el.innerHTML='<div class="agp-av">'+p.name.charAt(0)+'</div><div class="agp-name">'+p.name+'</div>'+
+        (p.role==='master'?'<div class="agp-badge">관리자</div>':'');
+      el.onclick=function(){ pickProfile(p); };
+      box.appendChild(el);
+    });
+    setTimeout(function(){ pass.blur(); }, 0);
+  }
+  function pickProfile(p){
+    SYNC.me={ name:p.name, role:p.role };
+    try{ localStorage.setItem('sq_profile', p.name); }catch(e){}
+    enterApp();
+  }
+  function enterApp(){
+    g.classList.add('hide');
+    updateSyncBar();
+    if(SYNC.db){
+      firebase.auth().signInAnonymously()
+        .then(function(){ SYNC.online=true; updateSyncBar(); subscribeTrip(); })
+        .catch(function(e){ console.warn('anon sign-in failed', e); SYNC.online=false; updateSyncBar(); });
+    } else { SYNC.online=false; updateSyncBar(); }
+  }
+
+  /* returning user: skip gate if already passed + profile chosen */
+  var savedPass=null, savedProfile=null;
+  try{ savedPass=localStorage.getItem('sq_gate_ok'); savedProfile=localStorage.getItem('sq_profile'); }catch(e){}
+  initFirebase();
+  if(savedPass==='1' && savedProfile){
+    var pr=PROFILES.filter(function(x){return x.name===savedProfile;})[0] || {name:savedProfile, role:'member'};
+    SYNC.me={ name:pr.name, role:pr.role };
+    enterApp();
+  } else if(savedPass==='1'){
+    showProfiles();
+  } else {
+    setTimeout(function(){ pass.focus(); }, 60);
+  }
+}
 
 /* init */
 buildGuides();
 applyLang();
 refreshTitle();
 document.getElementById('title').classList.add('shown');
+buildGate();
 </script>
 </body>
 </html>
