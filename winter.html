@@ -64,6 +64,7 @@ img{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
   opacity:0;transform:translateY(18px);
   transition:opacity .5s ease, transform .5s ease;
   z-index:10;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
 }
 .screen.active{display:flex;}
 .screen.shown{opacity:1;transform:translateY(0);}
@@ -573,6 +574,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
   .guide-grid{grid-template-columns:repeat(2,1fr);}
   .dock-portrait{width:64px;height:64px;}
   .tl-time{flex-basis:44px;font-size:11px;}
+}
+/* short/narrow viewports: let flow screens scroll from the top instead of
+   center-clipping, and clear the fixed dock + back button */
+@media(max-width:720px),(max-height:760px){
+  #guide,#party,#map,#survey{justify-content:flex-start;padding-top:60px;}
+  #party,#map,#survey{padding-bottom:160px;}
+  #guide{padding-bottom:48px;}
 }
 </style>
 </head>
