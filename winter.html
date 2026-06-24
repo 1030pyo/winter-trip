@@ -244,6 +244,14 @@ img{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
 .party-count b{color:var(--ice);font-size:20px;}
 
 /* ============ MAP ============ */
+/* flow from the top with room at the bottom so the action buttons clear the fixed NPC dock */
+#map{justify-content:flex-start;padding-top:64px;padding-bottom:200px;}
+/* departure (Tokyo hub) picker */
+.depart-pick{width:100%;max-width:560px;margin:0 auto 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:center;z-index:20;}
+.depart-pick .dp-label{width:100%;text-align:center;font-size:13px;color:var(--ice);font-weight:800;letter-spacing:1px;margin-bottom:2px;}
+.depart-pick .dp-opt{font-family:'Stardust',monospace;font-weight:700;font-size:13px;color:var(--white);background:var(--panel-2);border:2px solid var(--line);padding:8px 12px;cursor:pointer;transition:transform .1s,border-color .15s,background .15s,color .15s;}
+.depart-pick .dp-opt:hover{border-color:var(--ice);color:var(--ice);transform:translateY(-2px);}
+.depart-pick .dp-opt.sel{background:var(--gold);color:var(--black);border-color:var(--gold);}
 #map .map-stage{position:relative;z-index:20;display:flex;flex-direction:column;align-items:center;}
 .map-frame{position:relative;background:linear-gradient(#0a1016,#0d171f);padding:14px;}
 #japan{image-rendering:pixelated;display:block;}
@@ -593,7 +601,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .ag-logo{font-size:34px;margin-bottom:6px;display:inline-block;animation:spinFlake 9s linear infinite;}
 @keyframes spinFlake{to{transform:rotate(360deg);}}
 /* title screen → back-to-login button */
-.title-login{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:25;
+.title-login{position:absolute;top:16px;left:16px;z-index:25;
   font-family:'Stardust',monospace;font-weight:700;font-size:12px;color:var(--g3);letter-spacing:1px;
   background:rgba(13,19,25,.72);border:2px solid var(--line);padding:6px 14px;cursor:pointer;box-shadow:0 0 0 2px var(--black);}
 .title-login:hover{color:var(--ice);border-color:var(--ice);}
@@ -675,10 +683,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
       <div class="tagline" data-t="tagline"></div>
       <div class="start-row">
         <div class="start-btns">
-          <button class="btn gold" id="startBtn" data-t="start"></button>
-          <button class="btn ghost" id="baseBtn" data-t="base_btn" style="display:none"></button>
+          <button class="btn gold" id="baseBtn" data-t="base_btn"></button>
         </div>
-        <div class="press" data-t="press"></div>
       </div>
     </div>
     <div class="credit">Chroma Noir Arctic · PF스타더스트 3.0 · made for winter trips</div>
@@ -722,6 +728,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
       <div class="scr-kick" data-t="m_kick"></div>
       <div class="scr-title" data-t="m_title"></div>
     </div>
+    <!-- departure point picker (everyone lives in Tokyo) -->
+    <div class="depart-pick" id="departPick"></div>
     <!-- departure board (train-destination 전광판) -->
     <div class="depboard">
       <div class="dep-head">
@@ -815,6 +823,7 @@ var S = {
   lang:'ko',
   npc:null,
   users:[],
+  depart:null,
   dest:'hakodate',
   dests:[],
   route:[],
@@ -862,9 +871,14 @@ var T = {
   base_plan:{ko:'여행 플랜 보기',en:'View Plan'},
   base_deco:{ko:'캠프 꾸미기',en:'Decorate'},
   base_cmt_ph:{ko:'이 여행에 한마디…',en:'A word about this trip…'},
+  base_addtrip:{ko:'＋ 새로운 일정 추가',en:'＋ New itinerary'},
+  base_pickguide:{ko:'길잡이 선택',en:'Pick a guide'},
+  base_changeguide:{ko:'✎ 길잡이 바꾸기',en:'✎ Change guide'},
+  base_needguide:{ko:'먼저 길잡이를 선택해야 일정을 짤 수 있어.',en:'Pick a guide first to start an itinerary.'},
+  base_guide_none:{ko:'아직 길잡이가 없어. 함께 떠날 길잡이를 먼저 정해줘!',en:'No guide yet. Choose a guide to travel with first!'},
   press:{ko:'▶ 눌러서 모험 시작',en:'▶ PRESS TO BEGIN'},
 
-  g_kick:{ko:'STEP 1 · 길잡이 선택',en:'STEP 1 · PICK A GUIDE'},
+  g_kick:{ko:'길잡이 선택',en:'PICK A GUIDE'},
   g_title:{ko:'누구랑 떠날래?',en:'Who’s your guide?'},
   g_sub:{ko:'함께 여행을 안내해 줄 친구를 골라봐.',en:'Choose a buddy to guide your trip.'},
   g_next:{ko:'이 친구로 정했어',en:'Pick this one'},
@@ -914,14 +928,29 @@ function tr(k){ return L(T[k]); }
 
 /* ===================== SAVE / LOAD ===================== */
 var SAVE_KEY='snowquest_save_v1';
-var FLOW_SCREENS=['guide','party','map','survey','plan'];
+var FLOW_SCREENS=['map','survey','plan'];
+
+/* fixed expedition crew (participants) — leader 은재 is always index 0.
+   인원을 따로 고르지 않고, 참가자(프로필) 자체가 원정대원이 된다. */
+var CREW_NAMES=['은재','하은','승은'];
+function ensureCrew(){
+  var byName={};
+  (S.users||[]).forEach(function(u){ if(u&&u.name) byName[u.name]=u; });
+  var out=[];
+  CREW_NAMES.forEach(function(nm,i){
+    var u=byName[nm]||{name:nm};
+    u.name=nm; u.ava=AVA[i%AVA.length];
+    out.push(u);
+  });
+  S.users=out;
+}
 function saveState(scr){
   try{
     scr=scr||current;
     var prev=loadSave();
     var flow=(FLOW_SCREENS.indexOf(scr)>=0)?scr:(prev&&prev.flow?prev.flow:null);
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      lang:S.lang, npc:S.npc, users:S.users, dest:S.dest, dests:S.dests, route:S.route, survey:S.survey,
+      lang:S.lang, npc:S.npc, users:S.users, depart:S.depart, dest:S.dest, dests:S.dests, route:S.route, survey:S.survey,
       plan:PLAN, screen:scr, flow:flow
     }));
   }catch(e){}
@@ -935,9 +964,8 @@ function hasSave(){
   return !!(s && s.screen && s.screen!=='title');
 }
 function refreshTitle(){
-  var s=loadSave();
   var bb=document.getElementById('baseBtn');
-  if(bb) bb.style.display = (s && s.users && s.users.length)? 'inline-block':'none';
+  if(bb) bb.style.display='inline-block';   /* 베이스캠프로 — 항상 노출되는 유일한 진입점 */
 }
 
 /* ===================== SCREEN NAV ===================== */
@@ -957,10 +985,10 @@ function show(id){
 }
 function onEnter(id){
   var dock=document.getElementById('dock');
-  var withDock = (id==='party'||id==='map'||id==='survey'||id==='plan'||id==='camp'||id==='basecamp');
+  var withDock = (id==='map'||id==='survey'||id==='plan'||id==='camp'||id==='basecamp');
   dock.classList.toggle('show', withDock && !!S.npc);
   document.getElementById('backbtn').classList.toggle('show', id!=='title'&&id!=='loading'&&id!=='plan');
-  if(id==='party') enterParty();
+  if(id==='guide'){ buildGuides(); document.getElementById('guideNext').disabled=!S.npc; }
   if(id==='map') enterMap();
   if(id==='survey') enterSurvey();
   if(id==='plan') enterPlan();
@@ -970,9 +998,8 @@ function onEnter(id){
   if(id!=='loading') saveState(id);
 }
 document.getElementById('backbtn').onclick=function(){
-  if(current==='guide') show('title');
-  else if(current==='party') show('guide');
-  else if(current==='map') show('party');
+  if(current==='guide') show('basecamp');
+  else if(current==='map') show('basecamp');
   else if(current==='basecamp') show('title');
   else if(current==='camp') show(campReturn||'title');
   else if(current==='survey'){
@@ -1057,7 +1084,7 @@ function buildGuides(){
 document.getElementById('guideNext').onclick=function(){
   if(!S.npc) return;
   setDock();
-  show('party');
+  show('basecamp');
 };
 
 /* ===================== PARTY ===================== */
@@ -1103,6 +1130,30 @@ document.getElementById('userInput').addEventListener('keydown',function(e){
 document.getElementById('partyNext').onclick=function(){ show('map'); };
 
 /* ===================== HOKKAIDO MAP ===================== */
+/* departure points — everyone lives in Tokyo, so the trip starts from one of these hubs */
+var DEPARTS=[
+  {id:'haneda',  ko:'하네다 공항', en:'Haneda Airport'},
+  {id:'narita',  ko:'나리타 공항', en:'Narita Airport'},
+  {id:'tokyo',   ko:'도쿄역',      en:'Tokyo Station'},
+  {id:'shinjuku',ko:'신주쿠역',    en:'Shinjuku Station'}
+];
+function departById(id){ for(var i=0;i<DEPARTS.length;i++) if(DEPARTS[i].id===id) return DEPARTS[i]; return null; }
+function departName(){ var d=departById(S.depart); return d?(S.lang==='ko'?d.ko:d.en):''; }
+function renderDepart(){
+  var box=document.getElementById('departPick'); if(!box) return;
+  var ko=S.lang==='ko';
+  var h='<div class="dp-label">'+(ko?'✈ 어디서 출발해? (도쿄)':'✈ Where do you depart? (Tokyo)')+'</div>';
+  DEPARTS.forEach(function(d){
+    h+='<div class="dp-opt'+(S.depart===d.id?' sel':'')+'" data-id="'+d.id+'">'+(ko?d.ko:d.en)+'</div>';
+  });
+  box.innerHTML=h;
+  box.querySelectorAll('.dp-opt').forEach(function(el){
+    el.onclick=function(){
+      S.depart=el.getAttribute('data-id'); renderDepart(); updateMapFoot(); saveState('map');
+      var d=departById(S.depart); say(ko?(d.ko+'에서 출발하는 거지? 좋아!'):('Departing from '+d.en+'? Nice!'));
+    };
+  });
+}
 var REGIONS=[
   {id:'wakkanai', x:0.32,y:0.11, diff:5, ko:'왓카나이', en:'Wakkanai',
     dko:'일본 최북단 항구 도시. 바람이 거세고 멀어서 큰맘 먹고 가는 곳이야.',
@@ -1210,6 +1261,7 @@ function enterMap(){
     mk.style.width=(W*px)+'px'; mk.style.height=(H*px)+'px';
   }
   hidePop();
+  renderDepart();
   renderMarkers();
   drawRoute();
   updateBoard();
@@ -1351,14 +1403,15 @@ function hidePop(){
   popFor=null;
 }
 function updateMapFoot(){
-  var uniq=S.dests.length, n=S.route.length;
+  var uniq=S.dests.length, n=S.route.length, ko=S.lang==='ko';
   var rb=document.getElementById('routeReset'); if(rb) rb.disabled=n<1;
   var btn=document.getElementById('mapNext');
-  btn.disabled = uniq<1;
-  btn.textContent = uniq? (tr('m_next')+' ›') : tr('m_none');
+  if(uniq<1){ btn.disabled=true; btn.textContent=tr('m_none'); }
+  else if(!S.depart){ btn.disabled=true; btn.textContent=ko?'출발지를 정해줘':'Pick a departure'; }
+  else { btn.disabled=false; btn.textContent=tr('m_next')+' ›'; }
 }
 document.getElementById('mapNext').onclick=function(){
-  if(!S.dests.length) return;
+  if(!S.dests.length || !S.depart) return;
   S.dest=S.dests[0];
   var ko=S.lang==='ko';
   var names=S.route.map(function(id){var r=regionById(id);return r?(ko?r.ko:r.en):id;}).join(' ▸ ');
@@ -1970,6 +2023,7 @@ function renderPlan(){
     '<div class="scr-kick">'+tr('plan_kick')+'</div>'+
     '<h2>'+(S.lang==='ko'?destName()+' '+P.nights+'박 '+(P.nights+1)+'일':destName()+' '+P.nights+'N / '+(P.nights+1)+'D')+'</h2>'+
     '<div class="plan-meta">'+
+      (S.depart?chip('✈ '+departName()):'')+
       chip(destList())+
       chip(relationLabel())+chip(partyTxt)+chip(monthLabel())+
       chip(purposeLabels())+chip(S.survey.transit==='car'?(S.lang==='ko'?'렌터카':'Car'):(S.lang==='ko'?'뚜벅이':'Transit'))+
@@ -2041,6 +2095,9 @@ function chip(txt){ return txt?('<div class="chip">'+txt+'</div>'):''; }
 function guideTips(){
   var sv=S.survey, tips=[];
   var ko=S.lang==='ko';
+  if(S.depart){ var dp=departById(S.depart), air=(S.depart==='haneda'||S.depart==='narita');
+    tips.push(ko?(dp.ko+'에서 출발 — '+(air?'신치토세 공항행 직항편을 미리 예약하면 편해.':'홋카이도행 항공·신칸센 연계 시간을 미리 확인해.'))
+                :(dp.en+' departure — '+(air?'book a direct flight to New Chitose ahead.':'check your air/rail connection to Hokkaido.'))); }
   if([12,1,2].indexOf(sv.month)>=0) tips.push(ko?'한겨울이라 영하 추위 + 눈길! 방수 부츠랑 핫팩은 필수야.':'Deep winter means sub-zero cold and snowy roads — bring waterproof boots and hand warmers.');
   else tips.push(ko?'초겨울/늦겨울이라 낮엔 견딜 만해도 밤은 쌀쌀해. 겉옷 단단히 챙겨.':'Early/late winter days are mild but nights bite — pack a solid coat.');
   if(sv.transit==='car') tips.push(ko?'렌터카는 겨울 타이어 옵션 꼭 확인하고, 눈길 운전은 천천히!':'For a rental car, confirm winter tires and drive slow on snow.');
@@ -2230,9 +2287,18 @@ window.addEventListener('resize',function(){ if(current==='camp' && campActive!=
 
 /* ===================== BASE CAMP (hub) ===================== */
 function enterBasecamp(){
+  ensureCrew();
   setDock();
   if(S.npc) say(S.lang==='ko'?'베이스캠프야! 대원들이랑 여행 작전을 한눈에 볼 수 있어.':'Base camp! Your crew and trip plan at a glance.');
+  else say(S.lang==='ko'?'먼저 함께 떠날 길잡이를 정하면 새로운 일정을 짤 수 있어!':'Pick a guide first, then you can plan a new itinerary!');
   renderBasecamp();
+}
+function startItinerary(){
+  if(!S.npc){ show('guide'); return; }   /* 길잡이 필수 */
+  ensureCrew();
+  S.depart=null; S.dest='hakodate'; S.dests=[]; S.route=[]; PLAN=null;
+  S.survey={ relation:null, purposes:[], budget:40000, visited:null, nights:2, month:null, transit:null, pace:null };
+  show('map');
 }
 function renderBasecamp(){
   var w=document.getElementById('baseWrap'); w.innerHTML='';
@@ -2244,7 +2310,8 @@ function renderBasecamp(){
     '<div class="bc-plate">'+(ko?'❄ 눈길원정대 베이스캠프':'❄ SNOW QUEST BASE CAMP')+'</div>';
   w.appendChild(hero);
 
-  /* guide + destinations */
+  /* guide + destinations (길잡이 선택은 별도 · 필수) */
+  var secG=document.createElement('div'); secG.className='bc-sec'; secG.innerHTML=tr('base_guide'); w.appendChild(secG);
   if(S.npc){
     var g=npcById(S.npc);
     var gd=document.createElement('div'); gd.className='bc-guide';
@@ -2255,13 +2322,24 @@ function renderBasecamp(){
       '<div class="bc-portrait"><img class="spr" src="'+SPR+g.img+'" style="height:'+Math.min(g.gh||60,62)+'px;width:auto"></div>'+
       '<div class="bc-gtext"><div class="bc-gname">'+L(g.name)+'</div><div class="bc-grole">'+L(g.role)+'</div>'+
       '<div class="bc-dests">'+chips+'</div></div>';
+    var chg=document.createElement('button'); chg.className='bc-m-deco'; chg.textContent=tr('base_changeguide');
+    chg.onclick=function(){ show('guide'); };
+    gd.appendChild(chg);
     w.appendChild(gd);
+  } else {
+    var gnone=document.createElement('div'); gnone.className='bc-op'; gnone.style.flexDirection='column'; gnone.style.alignItems='stretch';
+    gnone.innerHTML='<div style="color:var(--g4);font-size:13px;line-height:1.5;margin-bottom:10px">'+tr('base_guide_none')+'</div>';
+    var pick=document.createElement('button'); pick.className='btn gold'; pick.textContent=tr('base_pickguide');
+    pick.onclick=function(){ show('guide'); };
+    gnone.appendChild(pick);
+    w.appendChild(gnone);
   }
 
   /* trip briefing (survey summary) */
   var sec1=document.createElement('div'); sec1.className='bc-sec'; sec1.innerHTML=tr('base_op'); w.appendChild(sec1);
   var op=document.createElement('div'); op.className='bc-op';
   var sv=S.survey, bits=[];
+  if(S.depart) bits.push(chip('✈ '+departName()));
   bits.push(chip(relationLabel()));
   bits.push(chip(S.users.length+(ko?'명':' ppl')));
   if(sv.month) bits.push(chip(monthLabel()));
@@ -2304,9 +2382,10 @@ function renderBasecamp(){
 
   /* footer actions */
   var foot=document.createElement('div'); foot.className='bc-foot';
-  var resume=document.createElement('button'); resume.className='btn gold'; resume.textContent=tr('base_resume');
-  resume.onclick=goResume;
-  foot.appendChild(resume);
+  var add=document.createElement('button'); add.className='btn gold'; add.textContent=tr('base_addtrip');
+  add.disabled=!S.npc;                       /* 길잡이를 선택해야 일정 추가 가능 */
+  add.onclick=startItinerary;
+  foot.appendChild(add);
   if(PLAN){
     var pv=document.createElement('button'); pv.className='btn'; pv.textContent=tr('base_plan');
     pv.onclick=function(){ show('plan'); };
@@ -2316,6 +2395,11 @@ function renderBasecamp(){
   rs.onclick=function(){ resetAll(); show('title'); };
   foot.appendChild(rs);
   w.appendChild(foot);
+  if(!S.npc){
+    var needg=document.createElement('div'); needg.className='camp-hint'; needg.style.width='100%';
+    needg.textContent=tr('base_needguide');
+    w.appendChild(needg);
+  }
 }
 function goResume(){
   var s=loadSave();
@@ -2326,7 +2410,7 @@ function goResume(){
 
 /* ===================== RESET ===================== */
 function resetAll(){
-  S.npc=null; S.users=[]; S.dest='hakodate'; S.dests=[]; S.route=[];
+  S.npc=null; S.users=[]; S.depart=null; S.dest='hakodate'; S.dests=[]; S.route=[];
   S.survey={ relation:null, purposes:[], budget:40000, visited:null, nights:2, month:null, transit:null, pace:null };
   document.getElementById('guideNext').disabled=true;
   buildGuides();
@@ -2349,7 +2433,6 @@ function applyLang(){
 }
 
 /* ===================== START ===================== */
-document.getElementById('startBtn').onclick=function(){ resetAll(); show('guide'); };
 document.getElementById('toLoginBtn').onclick=function(){
   var ag=document.getElementById('authgate'); if(!ag) return;
   ag.querySelector('#agStep1').style.display='block';
@@ -2363,18 +2446,18 @@ document.getElementById('toLoginBtn').onclick=function(){
 document.getElementById('baseBtn').onclick=function(){
   var s=loadSave();
   if(s){
-    S.lang=s.lang||S.lang; S.npc=s.npc||S.npc; S.users=s.users||[]; S.dest=s.dest||S.dest; S.dests=s.dests||[];
+    S.lang=s.lang||S.lang; S.npc=s.npc||S.npc; S.users=s.users||[]; S.depart=s.depart||S.depart; S.dest=s.dest||S.dest; S.dests=s.dests||[];
     S.route=s.route||[]; if((!S.route.length)&&S.dests.length) S.route=S.dests.slice(); syncDests();
     if(s.survey) S.survey=s.survey; PLAN=s.plan||PLAN;
-    buildGuides(); document.getElementById('guideNext').disabled=!S.npc; if(S.npc) setDock();
   }
-  if(!S.users.length){ resetAll(); show('guide'); return; }
+  ensureCrew();
+  buildGuides(); document.getElementById('guideNext').disabled=!S.npc; if(S.npc) setDock();
   show('basecamp');
 };
 document.addEventListener('keydown',function(e){
   var ag=document.getElementById('authgate');
   if(ag && !ag.classList.contains('hide')) return;          /* gate is up */
-  if((e.key==='Enter'||e.key===' ')&&current==='title'){ resetAll(); show('guide'); }
+  if((e.key==='Enter'||e.key===' ')&&current==='title'){ document.getElementById('baseBtn').click(); }
 });
 
 /* ===================== REALTIME SYNC (Firebase) ===================== */
@@ -2405,7 +2488,7 @@ function initFirebase(){
   }catch(e){ console.warn('firebase init failed', e); }
 }
 function sharedPayload(extra){
-  var p = { npc:S.npc||null, users:S.users||[], dest:S.dest||null, dests:S.dests||[],
+  var p = { npc:S.npc||null, users:S.users||[], depart:S.depart||null, dest:S.dest||null, dests:S.dests||[],
     route:S.route||[], survey:S.survey||{}, plan:(typeof PLAN!=='undefined'?(PLAN||null):null) };
   if(extra) for(var k in extra) p[k]=extra[k];
   return p;
@@ -2426,10 +2509,12 @@ function applyRemote(d){
   SYNC.applying = true;
   if('npc' in d) S.npc = d.npc;
   if(d.users) S.users = d.users;
+  if('depart' in d) S.depart = d.depart;
   if(d.dest) S.dest = d.dest;
   if(d.route) S.route = d.route;
   if(d.survey) S.survey = d.survey;
   if('plan' in d) PLAN = d.plan;
+  ensureCrew();                          /* 참가자는 고정 원정대(은재 리더)로 정규화 */
   if(typeof syncDests==='function') syncDests(); else if(d.dests) S.dests=d.dests;
   try{ saveState(current); }catch(e){}
   rerenderCurrent();
@@ -2441,7 +2526,7 @@ function rerenderCurrent(){
     var gn=document.getElementById('guideNext'); if(gn) gn.disabled=!S.npc;
     if(S.npc) setDock();
     if(current==='party') renderUsers();
-    else if(current==='map'){ if(typeof renderMarkers==='function'){ renderMarkers(); drawRoute(); updateBoard(); updateMapFoot(); } }
+    else if(current==='map'){ if(typeof renderMarkers==='function'){ renderDepart(); renderMarkers(); drawRoute(); updateBoard(); updateMapFoot(); } }
     else if(current==='survey') renderSurvey();
     else if(current==='plan') renderPlan();
     else if(current==='basecamp') renderBasecamp();
