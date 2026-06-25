@@ -589,6 +589,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .bc-pip{width:15px;height:16px;cursor:pointer;color:var(--g2);font-size:13px;line-height:16px;text-align:center;transition:transform .08s,color .12s;}
 .bc-pip.on{color:var(--gold);text-shadow:0 0 4px rgba(251,202,67,.5);}
 .bc-pip:hover{transform:scale(1.25);color:var(--ice);}
+.bc-fields{display:flex;flex-direction:column;gap:7px;}
+.bc-field{display:flex;flex-direction:column;gap:3px;}
+.bc-field label{font-size:10px;color:var(--ice);font-weight:700;letter-spacing:.5px;}
+.bc-field input{width:100%;font-family:'Stardust',monospace;font-size:12px;color:var(--white);
+  background:var(--panel-2);border:2px solid var(--line);padding:6px 8px;outline:none;}
+.bc-field input:focus{border-color:var(--ice);}
+.bc-field.pay label{color:var(--gold);}
+.bc-field.pay input{border-color:var(--gold-d);}
 .bc-foot{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px;}
 
 @media(max-width:720px){
@@ -957,6 +965,7 @@ function ensureCrew(){
   CREW_NAMES.forEach(function(nm,i){
     var u=byName[nm]||{name:nm};
     u.name=nm; u.ava=AVA[i%AVA.length];
+    if(!Array.isArray(u.jobs)) u.jobs=((typeof DEFAULT_CREW_JOBS!=='undefined'&&DEFAULT_CREW_JOBS[nm])||[]).slice();
     out.push(u);
   });
   S.users=out;
@@ -2305,13 +2314,15 @@ window.addEventListener('resize',function(){ if(current==='camp' && campActive!=
 /* ===================== BASE CAMP (hub) ===================== */
 /* 원정대원 능력치 카드 — 직업 + 스탯 (캠프 꾸미기 대체) */
 var CREW_JOBS=[
-  {id:'photo', emo:'📷', ko:'사진작가', en:'Shutterbug'},
-  {id:'foodie',emo:'🍜', ko:'미식가',   en:'Foodie'},
-  {id:'guide', emo:'🧭', ko:'길잡이',   en:'Navigator'},
-  {id:'mood',  emo:'✨', ko:'흥부장',   en:'Hype'},
-  {id:'thrift',emo:'💰', ko:'총무',     en:'Treasurer'},
-  {id:'sleepy',emo:'😴', ko:'잠만보',   en:'Sleepyhead'}
+  {id:'thrift',   ko:'총무',     en:'Treasurer'},
+  {id:'booking',  ko:'예약',     en:'Booking'},
+  {id:'guide',    ko:'길잡이',   en:'Navigator'},
+  {id:'interp',   ko:'통역',     en:'Interpreter'},
+  {id:'photo',    ko:'사진작가', en:'Photographer'},
+  {id:'foodscout',ko:'맛집검색', en:'Food scout'}
 ];
+/* 멤버별 기본 직업 (다중) — 리셋 시 자동 복원 */
+var DEFAULT_CREW_JOBS={ '은재':['thrift','booking'], '하은':['guide'], '승은':['interp','photo','foodscout'] };
 var CREW_STATS=[
   {id:'cold', ko:'추위내성', en:'Cold'},
   {id:'stam', ko:'체력',     en:'Stamina'},
@@ -2372,18 +2383,26 @@ function renderBasecamp(){
   /* trip briefing (survey summary) */
   var sec1=document.createElement('div'); sec1.className='bc-sec'; sec1.innerHTML=tr('base_op'); w.appendChild(sec1);
   var op=document.createElement('div'); op.className='bc-op';
-  var sv=S.survey, bits=[];
-  if(S.depart) bits.push(chip('✈ '+departName()));
-  bits.push(chip(relationLabel()));
-  bits.push(chip(S.users.length+(ko?'명':' ppl')));
-  if(sv.month) bits.push(chip(monthLabel()));
-  if(sv.purposes&&sv.purposes.length) bits.push(chip(purposeLabels()));
-  bits.push(chip(sv.nights+(ko?'박 '+(sv.nights+1)+'일':'N/'+(sv.nights+1)+'D')));
-  if(sv.transit) bits.push(chip(sv.transit==='car'?(ko?'렌터카':'Car'):(ko?'뚜벅이':'Transit')));
-  if(sv.pace) bits.push(chip(sv.pace==='relaxed'?(ko?'느긋':'Relaxed'):(ko?'알차게':'Packed')));
-  if(sv.visited) bits.push(chip(sv.visited==='again'?(ko?'재방문':'Return'):(ko?'첫방문':'First')));
-  bits.push(chip('¥'+(sv.budget||0).toLocaleString()+(ko?' /1인':' /pp')));
-  op.innerHTML=bits.join('');
+  var sv=S.survey;
+  /* 일정을 짜기 전(목적지/플랜 없음)에는 작전 회의 칸을 비워둔다 */
+  var hasTrip = !!PLAN || (S.dests && S.dests.length>0) || !!S.depart;
+  if(!hasTrip){
+    op.style.color='var(--g4)'; op.style.fontSize='13px'; op.style.lineHeight='1.5';
+    op.textContent=ko?'아직 짠 일정이 없어 · 아래 ‘＋ 새로운 일정 추가’로 시작해!':'No itinerary yet · tap “＋ New itinerary” below to start!';
+  } else {
+    var bits=[];
+    if(S.depart) bits.push(chip('✈ '+departName()));
+    bits.push(chip(relationLabel()));
+    bits.push(chip(S.users.length+(ko?'명':' ppl')));
+    if(sv.month) bits.push(chip(monthLabel()));
+    if(sv.purposes&&sv.purposes.length) bits.push(chip(purposeLabels()));
+    bits.push(chip(sv.nights+(ko?'박 '+(sv.nights+1)+'일':'N/'+(sv.nights+1)+'D')));
+    if(sv.transit) bits.push(chip(sv.transit==='car'?(ko?'렌터카':'Car'):(ko?'뚜벅이':'Transit')));
+    if(sv.pace) bits.push(chip(sv.pace==='relaxed'?(ko?'느긋':'Relaxed'):(ko?'알차게':'Packed')));
+    if(sv.visited) bits.push(chip(sv.visited==='again'?(ko?'재방문':'Return'):(ko?'첫방문':'First')));
+    bits.push(chip('¥'+(sv.budget||0).toLocaleString()+(ko?' /1인':' /pp')));
+    op.innerHTML=bits.join('');
+  }
   w.appendChild(op);
 
   /* crew roster */
@@ -2395,18 +2414,24 @@ function renderBasecamp(){
     if(!u.stats) u.stats={};
     var card=document.createElement('div'); card.className='bc-member';
     var top=document.createElement('div'); top.className='bc-m-top';
-    var jb=jobById(u.job);
+    if(!Array.isArray(u.jobs)) u.jobs=((DEFAULT_CREW_JOBS&&DEFAULT_CREW_JOBS[u.name])||[]).slice();
+    var jnames=u.jobs.map(function(id){var j=jobById(id);return j?(ko?j.ko:j.en):null;}).filter(Boolean).join(' · ');
     top.innerHTML='<div class="bc-m-ava"><img class="spr" src="./Asset/el_snowman.png"></div>'+
-      '<div class="bc-m-name">'+u.name+(jb?'<div style="font-size:11px;color:var(--gold);font-weight:700;margin-top:2px">'+(ko?jb.ko:jb.en)+'</div>':'')+'</div>'+
+      '<div class="bc-m-name">'+u.name+(jnames?'<div style="font-size:11px;color:var(--gold);font-weight:700;margin-top:2px">'+jnames+'</div>':'')+'</div>'+
       (idx===0?'<div class="bc-m-lead">'+(ko?'대장':'LEAD')+'</div>':'');
     card.appendChild(top);
 
-    /* 직업 선택 */
+    /* 직업 선택 (다중) */
     var jobWrap=document.createElement('div'); jobWrap.className='bc-m-job';
     CREW_JOBS.forEach(function(j){
-      var c=document.createElement('div'); c.className='bc-job'+(u.job===j.id?' sel':'');
+      var on=u.jobs.indexOf(j.id)>=0;
+      var c=document.createElement('div'); c.className='bc-job'+(on?' sel':'');
       c.textContent=(ko?j.ko:j.en);
-      c.onclick=function(){ u.job=(u.job===j.id?null:j.id); renderBasecamp(); saveState('basecamp'); };
+      c.onclick=function(){
+        var ix=u.jobs.indexOf(j.id);
+        if(ix>=0) u.jobs.splice(ix,1); else u.jobs.push(j.id);
+        renderBasecamp(); saveState('basecamp');
+      };
       jobWrap.appendChild(c);
     });
     card.appendChild(jobWrap);
@@ -2429,11 +2454,21 @@ function renderBasecamp(){
     });
     card.appendChild(statsBox);
 
-    /* 한마디 (유지) */
-    var cmt=document.createElement('input'); cmt.className='bc-comment'; cmt.maxLength=40;
-    cmt.placeholder=tr('base_cmt_ph'); cmt.value=u.comment||'';
-    cmt.oninput=function(){ u.comment=this.value; saveState('basecamp'); };
-    card.appendChild(cmt);
+    /* 자유 입력 항목 (한마디 · 음식 취향 · 위시 · 생활패턴 · 정산) */
+    function field(labelText, key, ph, maxlen, extra){
+      var f=document.createElement('div'); f.className='bc-field'+(extra?(' '+extra):'');
+      var lb=document.createElement('label'); lb.textContent=labelText;
+      var inp=document.createElement('input'); inp.maxLength=maxlen||40; inp.placeholder=ph||''; inp.value=u[key]||'';
+      inp.oninput=function(){ u[key]=this.value; saveState('basecamp'); };
+      f.appendChild(lb); f.appendChild(inp); return f;
+    }
+    var fields=document.createElement('div'); fields.className='bc-fields';
+    fields.appendChild(field(ko?'한마디':'Note',          'comment',  tr('base_cmt_ph'), 40));
+    fields.appendChild(field(ko?'좋아하는 음식':'Likes',    'foodLike', ko?'예: 라멘, 게, 성게':'e.g. ramen, crab', 40));
+    fields.appendChild(field(ko?'싫어하는 음식':'Dislikes', 'foodHate', ko?'예: 고수, 낫토':'e.g. cilantro, natto', 40));
+    fields.appendChild(field(ko?'꼭 가고 싶은 곳':'Must-visit','wish',    ko?'예: 하코다테 야경':'e.g. Hakodate night view', 50));
+    fields.appendChild(field(ko?'💴 페이페이 (경비 정산)':'💴 PayPay (settle)','paypay', ko?'PayPay ID / 전화번호':'PayPay ID / phone', 40, 'pay'));
+    card.appendChild(fields);
 
     roster.appendChild(card);
   });
