@@ -576,6 +576,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .bc-comment:focus{border-color:var(--ice);}
 .bc-m-deco{font-family:'Stardust';font-weight:800;font-size:12px;color:var(--ice);background:var(--panel-2);border:2px solid var(--ice-d);box-shadow:0 0 0 2px var(--black);padding:7px;cursor:pointer;}
 .bc-m-deco:hover{background:var(--water-dd);color:var(--pure);}
+/* 원정대원 능력치 카드 (캠프 꾸미기 대체) */
+.bc-m-job{display:flex;flex-wrap:wrap;gap:5px;}
+.bc-job{font-family:'Stardust';font-size:11px;font-weight:700;color:var(--g4);background:var(--panel-2);
+  border:2px solid var(--line);padding:4px 7px;cursor:pointer;transition:transform .1s,border-color .12s,background .12s,color .12s;}
+.bc-job:hover{border-color:var(--ice);color:var(--ice);transform:translateY(-1px);}
+.bc-job.sel{background:var(--gold);color:var(--black);border-color:var(--gold);}
+.bc-stats{display:flex;flex-direction:column;gap:4px;}
+.bc-stat{display:flex;align-items:center;gap:8px;}
+.bc-stat .st-label{flex:0 0 64px;font-size:11px;color:var(--g4);white-space:nowrap;}
+.bc-stat .st-pips{display:flex;gap:2px;}
+.bc-pip{width:15px;height:16px;cursor:pointer;color:var(--g2);font-size:13px;line-height:16px;text-align:center;transition:transform .08s,color .12s;}
+.bc-pip.on{color:var(--gold);text-shadow:0 0 4px rgba(251,202,67,.5);}
+.bc-pip:hover{transform:scale(1.25);color:var(--ice);}
 .bc-foot{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px;}
 
 @media(max-width:720px){
@@ -830,6 +843,10 @@ var S = {
   survey:{ relation:null, purposes:[], budget:40000, visited:null, nights:2, month:null, transit:null, pace:null }
 };
 var SPR='./sprites/';
+
+/* 팀 공유용: 로그인 화면(공용 암호+프로필 선택) 임시 비활성화.
+   나중에 복구하려면 이 값을 true 로만 바꾸면 됨. (게이트/동기화 코드는 그대로 보존) */
+var LOGIN_ENABLED=false;
 
 /* ===================== NPCS ===================== */
 var NPCS = [
@@ -2286,10 +2303,27 @@ function fitStage(wrap, maxScale){
 window.addEventListener('resize',function(){ if(current==='camp' && campActive!=='all'){ var w=document.querySelector('#campMain .stage-wrap'); if(w) fitStage(w,1); } });
 
 /* ===================== BASE CAMP (hub) ===================== */
+/* 원정대원 능력치 카드 — 직업 + 스탯 (캠프 꾸미기 대체) */
+var CREW_JOBS=[
+  {id:'photo', emo:'📷', ko:'사진작가', en:'Shutterbug'},
+  {id:'foodie',emo:'🍜', ko:'미식가',   en:'Foodie'},
+  {id:'guide', emo:'🧭', ko:'길잡이',   en:'Navigator'},
+  {id:'mood',  emo:'✨', ko:'흥부장',   en:'Hype'},
+  {id:'thrift',emo:'💰', ko:'총무',     en:'Treasurer'},
+  {id:'sleepy',emo:'😴', ko:'잠만보',   en:'Sleepyhead'}
+];
+var CREW_STATS=[
+  {id:'cold', ko:'추위내성', en:'Cold'},
+  {id:'stam', ko:'체력',     en:'Stamina'},
+  {id:'food', ko:'먹방',     en:'Appetite'},
+  {id:'nav',  ko:'길눈',     en:'Sense'},
+  {id:'fun',  ko:'흥',       en:'Fun'}
+];
+function jobById(id){ for(var i=0;i<CREW_JOBS.length;i++) if(CREW_JOBS[i].id===id) return CREW_JOBS[i]; return null; }
 function enterBasecamp(){
   ensureCrew();
   setDock();
-  if(S.npc) say(S.lang==='ko'?'베이스캠프야! 대원들이랑 여행 작전을 한눈에 볼 수 있어.':'Base camp! Your crew and trip plan at a glance.');
+  if(S.npc) say(S.lang==='ko'?'베이스캠프야! 대원 카드에서 각자 직업이랑 능력치를 정해봐.':'Base camp! Set each crew member’s job and stats on their card.');
   else say(S.lang==='ko'?'먼저 함께 떠날 길잡이를 정하면 새로운 일정을 짤 수 있어!':'Pick a guide first, then you can plan a new itinerary!');
   renderBasecamp();
 }
@@ -2358,25 +2392,50 @@ function renderBasecamp(){
   w.appendChild(sec2);
   var roster=document.createElement('div'); roster.className='bc-roster';
   S.users.forEach(function(u,idx){
-    if(!u.deco) u.deco={};
+    if(!u.stats) u.stats={};
     var card=document.createElement('div'); card.className='bc-member';
     var top=document.createElement('div'); top.className='bc-m-top';
+    var jb=jobById(u.job);
     top.innerHTML='<div class="bc-m-ava"><img class="spr" src="./Asset/el_snowman.png"></div>'+
-      '<div class="bc-m-name">'+u.name+'</div>'+
+      '<div class="bc-m-name">'+u.name+(jb?'<div style="font-size:11px;color:var(--gold);font-weight:700;margin-top:2px">'+(ko?jb.ko:jb.en)+'</div>':'')+'</div>'+
       (idx===0?'<div class="bc-m-lead">'+(ko?'대장':'LEAD')+'</div>':'');
     card.appendChild(top);
-    var mini=document.createElement('div'); mini.className='bc-m-mini';
-    var st=buildStage(u.deco); fillSlots(st, u.deco, false, idx); st.style.pointerEvents='none';
-    mini.appendChild(st); card.appendChild(mini);
+
+    /* 직업 선택 */
+    var jobWrap=document.createElement('div'); jobWrap.className='bc-m-job';
+    CREW_JOBS.forEach(function(j){
+      var c=document.createElement('div'); c.className='bc-job'+(u.job===j.id?' sel':'');
+      c.textContent=(ko?j.ko:j.en);
+      c.onclick=function(){ u.job=(u.job===j.id?null:j.id); renderBasecamp(); saveState('basecamp'); };
+      jobWrap.appendChild(c);
+    });
+    card.appendChild(jobWrap);
+
+    /* 능력치 (별 1~5, 클릭해서 설정) */
+    var statsBox=document.createElement('div'); statsBox.className='bc-stats';
+    CREW_STATS.forEach(function(s){
+      var v=u.stats[s.id]||3;
+      var row=document.createElement('div'); row.className='bc-stat';
+      var lab=document.createElement('span'); lab.className='st-label'; lab.textContent=(ko?s.ko:s.en);
+      var pips=document.createElement('div'); pips.className='st-pips';
+      for(var pi=1;pi<=5;pi++){
+        (function(val){
+          var p=document.createElement('span'); p.className='bc-pip'+(val<=v?' on':''); p.textContent='★';
+          p.onclick=function(){ u.stats[s.id]=val; renderBasecamp(); saveState('basecamp'); };
+          pips.appendChild(p);
+        })(pi);
+      }
+      row.appendChild(lab); row.appendChild(pips); statsBox.appendChild(row);
+    });
+    card.appendChild(statsBox);
+
+    /* 한마디 (유지) */
     var cmt=document.createElement('input'); cmt.className='bc-comment'; cmt.maxLength=40;
     cmt.placeholder=tr('base_cmt_ph'); cmt.value=u.comment||'';
     cmt.oninput=function(){ u.comment=this.value; saveState('basecamp'); };
     card.appendChild(cmt);
-    var deco=document.createElement('button'); deco.className='bc-m-deco'; deco.textContent='✎ '+tr('base_deco');
-    deco.onclick=function(){ campReturn='basecamp'; campActive=idx; show('camp'); };
-    card.appendChild(deco);
+
     roster.appendChild(card);
-    fitStage(mini, 0.42);
   });
   w.appendChild(roster);
 
@@ -2391,8 +2450,8 @@ function renderBasecamp(){
     pv.onclick=function(){ show('plan'); };
     foot.appendChild(pv);
   }
-  var rs=document.createElement('button'); rs.className='btn ghost'; rs.textContent=tr('restart');
-  rs.onclick=function(){ resetAll(); show('title'); };
+  var rs=document.createElement('button'); rs.className='btn ghost'; rs.textContent=(ko?'⟳ 모든 설정 리셋':'⟳ Reset all');
+  rs.onclick=resetEverything;
   foot.appendChild(rs);
   w.appendChild(foot);
   if(!S.npc){
@@ -2400,6 +2459,16 @@ function renderBasecamp(){
     needg.textContent=tr('base_needguide');
     w.appendChild(needg);
   }
+}
+/* 베이스캠프 · 모든 설정 리셋 — 여행/길잡이/대원 직업·능력치·한마디까지 전부 초기화 */
+function resetEverything(){
+  var ko=S.lang==='ko';
+  if(!confirm(ko?'모든 설정을 초기화할까?\n(길잡이 · 여행 일정 · 대원 직업/능력치/한마디 전부 삭제)':'Reset everything?\n(Guide, trip, and all crew jobs/stats/comments)')) return;
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  resetAll();          /* S.npc/users/depart/dest/dests/route/survey 초기화 */
+  PLAN=null;
+  ensureCrew();        /* 대원은 고정 명단으로 재생성 (직업·능력치·한마디는 비워짐) */
+  enterBasecamp();     /* 베이스캠프 새로 렌더 */
 }
 function goResume(){
   var s=loadSave();
@@ -2737,7 +2806,12 @@ buildGuides();
 applyLang();
 refreshTitle();
 document.getElementById('title').classList.add('shown');
-buildGate();
+if(LOGIN_ENABLED){
+  buildGate();
+} else {
+  /* 로그인 비활성화: 게이트를 만들지 않고 타이틀 바로 노출. 동기화 없이 로컬 저장만 사용. */
+  var _lb=document.getElementById('toLoginBtn'); if(_lb) _lb.style.display='none';
+}
 </script>
 </body>
 </html>
