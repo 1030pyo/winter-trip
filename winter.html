@@ -21,6 +21,27 @@
   src:url('./Font/PF스타더스트 3.0 ExtraBold.ttf') format('truetype');
   font-weight:800; font-display:swap;
 }
+/* ---- Japanese glyphs (jp.ttf) merged into the same 'Stardust' family via unicode-range.
+   Hiragana / Katakana / CJK / fullwidth forms render with jp.ttf; Korean & Latin keep PF Stardust.
+   Declared for each used weight so bold Japanese text also picks up jp.ttf. ---- */
+@font-face{
+  font-family:'Stardust';
+  src:url('./Font/jp.ttf') format('truetype');
+  font-weight:400; font-display:swap;
+  unicode-range:U+3000-303F, U+3040-309F, U+30A0-30FF, U+31F0-31FF, U+3400-4DBF, U+4E00-9FFF, U+FF00-FFEF;
+}
+@font-face{
+  font-family:'Stardust';
+  src:url('./Font/jp.ttf') format('truetype');
+  font-weight:700; font-display:swap;
+  unicode-range:U+3000-303F, U+3040-309F, U+30A0-30FF, U+31F0-31FF, U+3400-4DBF, U+4E00-9FFF, U+FF00-FFEF;
+}
+@font-face{
+  font-family:'Stardust';
+  src:url('./Font/jp.ttf') format('truetype');
+  font-weight:800; font-display:swap;
+  unicode-range:U+3000-303F, U+3040-309F, U+30A0-30FF, U+31F0-31FF, U+3400-4DBF, U+4E00-9FFF, U+FF00-FFEF;
+}
 
 /* ============ PALETTE (Chroma Noir) ============ */
 :root{
@@ -163,11 +184,26 @@ img{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
   0%,100%{filter:drop-shadow(4px 4px 0 var(--ice-d)) drop-shadow(8px 8px 0 var(--black)) drop-shadow(0 0 14px rgba(77,204,237,.4));}
   50%{filter:drop-shadow(4px 4px 0 var(--ice-d)) drop-shadow(8px 8px 0 var(--black)) drop-shadow(0 0 30px rgba(77,204,237,.85));}
 }
+/* text title for Japanese (no JP title image — rendered with jp.ttf) */
+.jatitle{
+  display:block;margin:0 auto;font-weight:800;line-height:1.05;
+  font-size:clamp(44px,12vw,96px);letter-spacing:6px;color:var(--pure);
+  -webkit-font-smoothing:none;
+  animation:logoglow 3.5s ease-in-out infinite;
+}
 .entitle{
   font-weight:800;font-size:clamp(18px,4vw,40px);letter-spacing:8px;color:var(--ice);
   margin-top:10px;text-shadow:3px 3px 0 var(--black);
 }
 .tagline{margin-top:18px;color:var(--g4);font-size:clamp(13px,2.4vw,19px);text-shadow:2px 2px 0 var(--black);}
+/* language selector — small pill row above the title logo */
+.lang-sel{display:flex;gap:7px;justify-content:center;margin-bottom:16px;}
+.lang-opt{font-family:'Stardust',monospace;font-weight:700;font-size:12px;letter-spacing:1px;
+  color:var(--g3);background:rgba(13,19,25,.72);border:2px solid var(--line);
+  padding:5px 13px;cursor:pointer;transition:transform .1s,color .12s,border-color .12s,background .12s;
+  box-shadow:0 0 0 2px var(--black);}
+.lang-opt:hover{color:var(--ice);border-color:var(--ice);transform:translateY(-1px);}
+.lang-opt.on{background:var(--ice);color:var(--black);border-color:var(--ice);}
 .start-row{margin-top:42px;display:flex;flex-direction:column;align-items:center;gap:14px;}
 .start-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
 .press{font-weight:800;font-size:20px;color:var(--gold);animation:blink 1.05s steps(2) infinite;text-shadow:2px 2px 0 var(--black);}
@@ -698,7 +734,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
       <div class="stars" id="stars"></div>
     </div>
     <div class="titlewrap">
+      <div class="lang-sel" id="langSel">
+        <button class="lang-opt" data-lang="ko">한국어</button>
+        <button class="lang-opt" data-lang="ja">日本語</button>
+      </div>
       <img class="kotitle" src="./Asset/title_ko.png" alt="눈길원정대">
+      <div class="jatitle" id="jaTitle" style="display:none">雪道遠征隊</div>
 
       <div class="entitle">SNOW QUEST</div>
       <div class="tagline" data-t="tagline"></div>
@@ -859,97 +900,99 @@ var LOGIN_ENABLED=false;
 /* ===================== NPCS ===================== */
 var NPCS = [
   { id:'boro', img:'npc_ghost.png', w:58, gh:78,
-    name:{ko:'보로',en:'Boro'},
-    role:{ko:'감성 길잡이',en:'Cozy Guide'},
-    tag:{ko:'야경·힐링',en:'Views·Chill'},
-    desc:{ko:'느긋하고 다정한 눈의 정령.\n예쁜 풍경이라면 다 알아.',en:'A gentle snow spirit.\nKnows every pretty view.'} },
+    name:{ko:'보로',en:'Boro',ja:'ボロ'},
+    role:{ko:'감성 길잡이',en:'Cozy Guide',ja:'癒やしのガイド'},
+    tag:{ko:'야경·힐링',en:'Views·Chill',ja:'夜景・癒やし'},
+    desc:{ko:'느긋하고 다정한 눈의 정령.\n예쁜 풍경이라면 다 알아.',en:'A gentle snow spirit.\nKnows every pretty view.',ja:'のんびり優しい雪の精霊。\nきれいな景色なら何でも知ってる。'} },
   { id:'nova', img:'npc_frost.png', w:30, gh:78,
-    name:{ko:'노바',en:'Nova'},
-    role:{ko:'알뜰 길잡이',en:'Thrift Guide'},
-    tag:{ko:'예산·효율',en:'Budget·Plan'},
-    desc:{ko:'똑부러지는 서리 기사.\n1엔도 허투루 안 써!',en:'A sharp frost knight.\nNever wastes a single yen!'} },
+    name:{ko:'노바',en:'Nova',ja:'ノヴァ'},
+    role:{ko:'알뜰 길잡이',en:'Thrift Guide',ja:'倹約ガイド'},
+    tag:{ko:'예산·효율',en:'Budget·Plan',ja:'予算・効率'},
+    desc:{ko:'똑부러지는 서리 기사.\n1엔도 허투루 안 써!',en:'A sharp frost knight.\nNever wastes a single yen!',ja:'しっかり者の霜の騎士。\n1円も無駄にしない！'} },
   { id:'koko', img:'npc_imp.png', w:42, gh:58,
-    name:{ko:'코코',en:'Koko'},
-    role:{ko:'먹보 길잡이',en:'Foodie Guide'},
-    tag:{ko:'맛집·먹방',en:'Food·Eats'},
-    desc:{ko:'장난꾸러기 꼬마 도깨비.\n맛있는 건 절대 못 참아.',en:'A mischievous little imp.\nLives for tasty bites.'} },
+    name:{ko:'코코',en:'Koko',ja:'ココ'},
+    role:{ko:'먹보 길잡이',en:'Foodie Guide',ja:'グルメガイド'},
+    tag:{ko:'맛집·먹방',en:'Food·Eats',ja:'グルメ・食べ歩き'},
+    desc:{ko:'장난꾸러기 꼬마 도깨비.\n맛있는 건 절대 못 참아.',en:'A mischievous little imp.\nLives for tasty bites.',ja:'いたずら好きの小鬼。\nおいしいものには勝てない。'} },
   { id:'popo', img:'npc_penguin.png', w:34, gh:62,
-    name:{ko:'포포',en:'Popo'},
-    role:{ko:'활동 길잡이',en:'Active Guide'},
-    tag:{ko:'액티비티·사진',en:'Active·Photo'},
-    desc:{ko:'에너지 넘치는 눈펭귄.\n같이 뛰어놀자, 응?',en:'A bouncy snow penguin.\nLet’s go play, okay?'} }
+    name:{ko:'포포',en:'Popo',ja:'ポポ'},
+    role:{ko:'활동 길잡이',en:'Active Guide',ja:'アクティブガイド'},
+    tag:{ko:'액티비티·사진',en:'Active·Photo',ja:'アクティビティ・写真'},
+    desc:{ko:'에너지 넘치는 눈펭귄.\n같이 뛰어놀자, 응?',en:'A bouncy snow penguin.\nLet’s go play, okay?',ja:'元気いっぱいの雪ペンギン。\n一緒に遊ぼう、ね？'} }
 ];
 function npcById(id){ for(var i=0;i<NPCS.length;i++) if(NPCS[i].id===id) return NPCS[i]; return NPCS[0]; }
 
 /* ===================== I18N (UI) ===================== */
 var T = {
-  tagline:{ko:'추운 건 질색이지만, 너랑 가는 겨울은 좋아.',en:'I hate the cold — but winter with you? Love it.'},
-  start:{ko:'처음부터',en:'New Game'},
-  base_btn:{ko:'베이스캠프로',en:'To Base Camp'},
-  base_kick:{ko:'겨울 모험대 · 작전 본부',en:'Winter Expedition · HQ'},
-  base_title:{ko:'베이스캠프',en:'Base Camp'},
-  base_guide:{ko:'우리 길잡이',en:'Our Guide'},
-  base_dest:{ko:'목적지',en:'Destinations'},
-  base_op:{ko:'여행 작전 회의',en:'Trip Briefing'},
-  base_roster:{ko:'원정대원',en:'Expedition Crew'},
-  base_resume:{ko:'모험 이어가기',en:'Resume Adventure'},
-  base_plan:{ko:'여행 플랜 보기',en:'View Plan'},
-  base_deco:{ko:'캠프 꾸미기',en:'Decorate'},
-  base_cmt_ph:{ko:'이 여행에 한마디…',en:'A word about this trip…'},
-  base_addtrip:{ko:'＋ 새로운 일정 추가',en:'＋ New itinerary'},
-  base_pickguide:{ko:'길잡이 선택',en:'Pick a guide'},
-  base_changeguide:{ko:'✎ 길잡이 바꾸기',en:'✎ Change guide'},
-  base_needguide:{ko:'먼저 길잡이를 선택해야 일정을 짤 수 있어.',en:'Pick a guide first to start an itinerary.'},
-  base_guide_none:{ko:'아직 길잡이가 없어. 함께 떠날 길잡이를 먼저 정해줘!',en:'No guide yet. Choose a guide to travel with first!'},
-  press:{ko:'▶ 눌러서 모험 시작',en:'▶ PRESS TO BEGIN'},
+  tagline:{ko:'추운 건 질색이지만, 너랑 가는 겨울은 좋아.',en:'I hate the cold — but winter with you? Love it.',ja:'寒いのは苦手だけど、君と行く冬は好き。'},
+  start:{ko:'처음부터',en:'New Game',ja:'はじめから'},
+  base_btn:{ko:'베이스캠프로',en:'To Base Camp',ja:'ベースキャンプへ'},
+  base_kick:{ko:'겨울 모험대 · 작전 본부',en:'Winter Expedition · HQ',ja:'冬の遠征隊 · 作戦本部'},
+  base_title:{ko:'베이스캠프',en:'Base Camp',ja:'ベースキャンプ'},
+  base_guide:{ko:'우리 길잡이',en:'Our Guide',ja:'わたしたちのガイド'},
+  base_dest:{ko:'목적지',en:'Destinations',ja:'目的地'},
+  base_op:{ko:'여행 작전 회의',en:'Trip Briefing',ja:'旅の作戦会議'},
+  base_roster:{ko:'원정대원',en:'Expedition Crew',ja:'遠征隊メンバー'},
+  base_resume:{ko:'모험 이어가기',en:'Resume Adventure',ja:'冒険を続ける'},
+  base_plan:{ko:'여행 플랜 보기',en:'View Plan',ja:'旅プランを見る'},
+  base_deco:{ko:'캠프 꾸미기',en:'Decorate',ja:'キャンプを飾る'},
+  base_cmt_ph:{ko:'이 여행에 한마디…',en:'A word about this trip…',ja:'この旅に一言…'},
+  base_addtrip:{ko:'＋ 새로운 일정 추가',en:'＋ New itinerary',ja:'＋ 新しい日程を追加'},
+  base_pickguide:{ko:'길잡이 선택',en:'Pick a guide',ja:'ガイドを選ぶ'},
+  base_changeguide:{ko:'✎ 길잡이 바꾸기',en:'✎ Change guide',ja:'✎ ガイドを変える'},
+  base_needguide:{ko:'먼저 길잡이를 선택해야 일정을 짤 수 있어.',en:'Pick a guide first to start an itinerary.',ja:'まずガイドを選ぶと日程を組めるよ。'},
+  base_guide_none:{ko:'아직 길잡이가 없어. 함께 떠날 길잡이를 먼저 정해줘!',en:'No guide yet. Choose a guide to travel with first!',ja:'まだガイドがいないよ。一緒に旅するガイドを先に決めて！'},
+  press:{ko:'▶ 눌러서 모험 시작',en:'▶ PRESS TO BEGIN',ja:'▶ 押して冒険スタート'},
 
-  g_kick:{ko:'길잡이 선택',en:'PICK A GUIDE'},
-  g_title:{ko:'누구랑 떠날래?',en:'Who’s your guide?'},
-  g_sub:{ko:'함께 여행을 안내해 줄 친구를 골라봐.',en:'Choose a buddy to guide your trip.'},
-  g_next:{ko:'이 친구로 정했어',en:'Pick this one'},
+  g_kick:{ko:'길잡이 선택',en:'PICK A GUIDE',ja:'ガイドを選択'},
+  g_title:{ko:'누구랑 떠날래?',en:'Who’s your guide?',ja:'誰と出かける？'},
+  g_sub:{ko:'함께 여행을 안내해 줄 친구를 골라봐.',en:'Choose a buddy to guide your trip.',ja:'旅を案内してくれる仲間を選ぼう。'},
+  g_next:{ko:'이 친구로 정했어',en:'Pick this one',ja:'この子に決めた'},
 
-  p_kick:{ko:'STEP 2 · 일행 추가',en:'STEP 2 · ADD PARTY'},
-  p_title:{ko:'같이 갈 사람을 적어줘',en:'Who’s coming along?'},
-  p_ph:{ko:'이름을 입력해',en:'Enter a name'},
-  p_add:{ko:'추가',en:'Add'},
-  p_count:{ko:'우리 일행은 총',en:'Party of'},
-  p_people:{ko:'명',en:''},
-  p_next:{ko:'지도로 가기',en:'To the map'},
+  p_kick:{ko:'STEP 2 · 일행 추가',en:'STEP 2 · ADD PARTY',ja:'STEP 2 · 仲間を追加'},
+  p_title:{ko:'같이 갈 사람을 적어줘',en:'Who’s coming along?',ja:'一緒に行く人を書いてね'},
+  p_ph:{ko:'이름을 입력해',en:'Enter a name',ja:'名前を入力'},
+  p_add:{ko:'추가',en:'Add',ja:'追加'},
+  p_count:{ko:'우리 일행은 총',en:'Party of',ja:'仲間は全部で'},
+  p_people:{ko:'명',en:'',ja:'人'},
+  p_next:{ko:'지도로 가기',en:'To the map',ja:'地図へ'},
 
-  m_kick:{ko:'STEP 3 · 목적지',en:'STEP 3 · DESTINATION'},
-  m_title:{ko:'어디로 떠날까?',en:'Where to?'},
-  m_legend:{ko:'지역을 누르면 소개가 떠. <b>행선지에 추가</b>하면 아래 <b>전광판</b>에 순서대로 등록되고 지도에 루트가 그려져!',en:'Tap a region for details. <b>Add it</b> and it boards the sign below in order — the route draws on the map!'},
-  m_diff:{ko:'여행 난이도',en:'Difficulty'},
-  m_close:{ko:'닫기',en:'Close'},
-  m_next:{ko:'다음',en:'Next'},
-  m_none:{ko:'행선지를 먼저 추가해줘',en:'Add a destination first'},
-  m_reset:{ko:'↺ 경로 리셋',en:'↺ Reset route'},
-  m_addstop:{ko:'＋ 행선지에 추가',en:'＋ Add to board'},
-  m_startstop:{ko:'▶ 여기서 출발',en:'▶ Depart from here'},
-  m_again:{ko:'＋ 다시 경유',en:'＋ Stop again'},
-  m_start:{ko:'출발지',en:'Start'},
-  m_stopn:{ko:'번째 경유지',en: ' stop'},
-  dep_title:{ko:'행선지 · DESTINATIONS',en:'DESTINATIONS · 行先'},
+  m_kick:{ko:'STEP 3 · 목적지',en:'STEP 3 · DESTINATION',ja:'STEP 3 · 目的地'},
+  m_title:{ko:'어디로 떠날까?',en:'Where to?',ja:'どこへ行く？'},
+  m_legend:{ko:'지역을 누르면 소개가 떠. <b>행선지에 추가</b>하면 아래 <b>전광판</b>에 순서대로 등록되고 지도에 루트가 그려져!',en:'Tap a region for details. <b>Add it</b> and it boards the sign below in order — the route draws on the map!',ja:'地域をタップすると紹介が出るよ。<b>行き先に追加</b>すると下の<b>電光掲示板</b>に順番に並んで、地図にルートが描かれる！'},
+  m_diff:{ko:'여행 난이도',en:'Difficulty',ja:'旅の難易度'},
+  m_close:{ko:'닫기',en:'Close',ja:'閉じる'},
+  m_next:{ko:'다음',en:'Next',ja:'次へ'},
+  m_none:{ko:'행선지를 먼저 추가해줘',en:'Add a destination first',ja:'先に行き先を追加してね'},
+  m_reset:{ko:'↺ 경로 리셋',en:'↺ Reset route',ja:'↺ ルートをリセット'},
+  m_addstop:{ko:'＋ 행선지에 추가',en:'＋ Add to board',ja:'＋ 行き先に追加'},
+  m_startstop:{ko:'▶ 여기서 출발',en:'▶ Depart from here',ja:'▶ ここから出発'},
+  m_again:{ko:'＋ 다시 경유',en:'＋ Stop again',ja:'＋ もう一度経由'},
+  m_start:{ko:'출발지',en:'Start',ja:'出発地'},
+  m_stopn:{ko:'번째 경유지',en: ' stop',ja:'番目の経由地'},
+  dep_title:{ko:'행선지 · DESTINATIONS',en:'DESTINATIONS · 行先',ja:'行先 · DESTINATIONS'},
 
-  s_prev:{ko:'‹ 이전',en:'‹ Back'},
-  s_next:{ko:'다음 ›',en:'Next ›'},
-  s_done:{ko:'플랜 만들기',en:'Make my plan'},
+  s_prev:{ko:'‹ 이전',en:'‹ Back',ja:'‹ 戻る'},
+  s_next:{ko:'다음 ›',en:'Next ›',ja:'次へ ›'},
+  s_done:{ko:'플랜 만들기',en:'Make my plan',ja:'プランを作る'},
 
-  l_title:{ko:'최적의 루트를 짜는 중...',en:'Plotting the best route...'},
+  l_title:{ko:'최적의 루트를 짜는 중...',en:'Plotting the best route...',ja:'最適なルートを計画中...'},
 
-  plan_kick:{ko:'완성! · 너만의 겨울 루트',en:'Done! · Your winter route'},
-  plan_total:{ko:'예상 경비 (현지 입장료·식비·교통)',en:'Est. cost (entry·food·local transit)'},
-  reroll:{ko:'다시 짜줘',en:'Re-roll'},
-  restart:{ko:'처음으로',en:'Start over'},
-  tips_h:{ko:'길잡이의 꿀팁',en:'Guide’s tips'},
-  back:{ko:'‹ 뒤로',en:'‹ Back'},
+  plan_kick:{ko:'완성! · 너만의 겨울 루트',en:'Done! · Your winter route',ja:'完成！ · 君だけの冬ルート'},
+  plan_total:{ko:'예상 경비 (현지 입장료·식비·교통)',en:'Est. cost (entry·food·local transit)',ja:'予想経費（現地入場料・食費・交通）'},
+  reroll:{ko:'다시 짜줘',en:'Re-roll',ja:'組み直す'},
+  restart:{ko:'처음으로',en:'Start over',ja:'最初に戻る'},
+  tips_h:{ko:'길잡이의 꿀팁',en:'Guide’s tips',ja:'ガイドのとっておき'},
+  back:{ko:'‹ 뒤로',en:'‹ Back',ja:'‹ 戻る'},
 
-  camp_btn:{ko:'캠프 꾸미기',en:'Decorate Camp'},
-  camp_kick:{ko:'보너스 · 우리들의 눈밭',en:'Bonus · Our snowfield'},
-  camp_title:{ko:'각자의 캠프를 꾸며봐',en:'Decorate each camp'}
+  camp_btn:{ko:'캠프 꾸미기',en:'Decorate Camp',ja:'キャンプを飾る'},
+  camp_kick:{ko:'보너스 · 우리들의 눈밭',en:'Bonus · Our snowfield',ja:'ボーナス · わたしたちの雪原'},
+  camp_title:{ko:'각자의 캠프를 꾸며봐',en:'Decorate each camp',ja:'それぞれのキャンプを飾ろう'}
 };
 function L(o){ return (o&&o[S.lang]!=null)?o[S.lang]:(o?o.ko:''); }
 function tr(k){ return L(T[k]); }
+/* trilingual inline picker — falls back to Korean if a Japanese string is missing */
+function tl(ko,en,ja){ return S.lang==='en'?en : (S.lang==='ja'?(ja!=null?ja:ko):ko); }
 
 /* ===================== SAVE / LOAD ===================== */
 var SAVE_KEY='snowquest_save_v1';
@@ -958,6 +1001,9 @@ var FLOW_SCREENS=['map','survey','plan'];
 /* fixed expedition crew (participants) — leader 은재 is always index 0.
    인원을 따로 고르지 않고, 참가자(프로필) 자체가 원정대원이 된다. */
 var CREW_NAMES=['은재','하은','승은'];
+/* display names — internal u.name stays Korean (job-map / sync key); shown romanized outside Korean */
+var CREW_DISP={ '은재':'Eunjae', '하은':'Haeun', '승은':'Seungeun' };
+function dispName(name){ return (S.lang!=='ko' && CREW_DISP[name]) ? CREW_DISP[name] : name; }
 function ensureCrew(){
   var byName={};
   (S.users||[]).forEach(function(u){ if(u&&u.name) byName[u.name]=u; });
@@ -1118,7 +1164,7 @@ var AVA=['npc_imp.png','npc_penguin.png','npc_frost.png','npc_ghost.png'];
 function enterParty(){
   setDock();
   var n=npcById(S.npc);
-  var greet={ko:L(n.name)+'(이)야! 같이 갈 사람들 이름을 적어줘. 너부터 먼저!',en:'I’m '+L(n.name)+'! Add everyone coming — you first!'};
+  var greet={ko:L(n.name)+'(이)야! 같이 갈 사람들 이름을 적어줘. 너부터 먼저!',en:'I’m '+L(n.name)+'! Add everyone coming — you first!',ja:L(n.name)+'だよ！一緒に行く人の名前を書いてね。まずは君から！'};
   say(L(greet));
   renderUsers();
 }
@@ -1130,7 +1176,7 @@ function addUser(){
   S.users.push({name:v, ava:AVA[S.users.length%AVA.length]});
   inp.value=''; inp.focus();
   renderUsers();
-  if(S.users.length===1){ say(S.lang==='ko'?'좋아, 너가 대장이네! 더 있으면 계속 추가해.':'Nice, you’re the leader! Add more if you want.'); }
+  if(S.users.length===1){ say(tl('좋아, 너가 대장이네! 더 있으면 계속 추가해.','Nice, you’re the leader! Add more if you want.','よし、君がリーダーだね！まだいるなら続けて追加して。')); }
 }
 function renderUsers(){
   var list=document.getElementById('userList'); list.innerHTML='';
@@ -1138,8 +1184,8 @@ function renderUsers(){
     var row=document.createElement('div'); row.className='user-row';
     row.innerHTML=
       '<div class="uava"><img class="spr" src="./Asset/el_snowman.png"></div>'+
-      '<div class="uname">'+u.name+'</div>'+
-      (idx===0?'<div class="ulead">'+(S.lang==='ko'?'대장':'LEAD')+'</div>':'')+
+      '<div class="uname">'+dispName(u.name)+'</div>'+
+      (idx===0?'<div class="ulead">'+tl('대장','LEAD','隊長')+'</div>':'')+
       '<div class="udel" data-i="'+idx+'">✕</div>';
     row.querySelector('.udel').onclick=function(){
       S.users.splice(parseInt(this.getAttribute('data-i')),1); renderUsers();
@@ -1158,50 +1204,56 @@ document.getElementById('partyNext').onclick=function(){ show('map'); };
 /* ===================== HOKKAIDO MAP ===================== */
 /* departure points — everyone lives in Tokyo, so the trip starts from one of these hubs */
 var DEPARTS=[
-  {id:'haneda',  ko:'하네다 공항', en:'Haneda Airport'},
-  {id:'narita',  ko:'나리타 공항', en:'Narita Airport'},
-  {id:'tokyo',   ko:'도쿄역',      en:'Tokyo Station'},
-  {id:'shinjuku',ko:'신주쿠역',    en:'Shinjuku Station'}
+  {id:'haneda',  ko:'하네다 공항', en:'Haneda Airport',   ja:'羽田空港'},
+  {id:'narita',  ko:'나리타 공항', en:'Narita Airport',   ja:'成田空港'},
+  {id:'tokyo',   ko:'도쿄역',      en:'Tokyo Station',    ja:'東京駅'},
+  {id:'shinjuku',ko:'신주쿠역',    en:'Shinjuku Station', ja:'新宿駅'}
 ];
 function departById(id){ for(var i=0;i<DEPARTS.length;i++) if(DEPARTS[i].id===id) return DEPARTS[i]; return null; }
-function departName(){ var d=departById(S.depart); return d?(S.lang==='ko'?d.ko:d.en):''; }
+function departName(){ var d=departById(S.depart); return d?tl(d.ko,d.en,d.ja):''; }
 function renderDepart(){
   var box=document.getElementById('departPick'); if(!box) return;
-  var ko=S.lang==='ko';
-  var h='<div class="dp-label">'+(ko?'✈ 어디서 출발해? (도쿄)':'✈ Where do you depart? (Tokyo)')+'</div>';
+  var h='<div class="dp-label">'+tl('✈ 어디서 출발해? (도쿄)','✈ Where do you depart? (Tokyo)','✈ どこから出発する？（東京）')+'</div>';
   DEPARTS.forEach(function(d){
-    h+='<div class="dp-opt'+(S.depart===d.id?' sel':'')+'" data-id="'+d.id+'">'+(ko?d.ko:d.en)+'</div>';
+    h+='<div class="dp-opt'+(S.depart===d.id?' sel':'')+'" data-id="'+d.id+'">'+tl(d.ko,d.en,d.ja)+'</div>';
   });
   box.innerHTML=h;
   box.querySelectorAll('.dp-opt').forEach(function(el){
     el.onclick=function(){
       S.depart=el.getAttribute('data-id'); renderDepart(); updateMapFoot(); saveState('map');
-      var d=departById(S.depart); say(ko?(d.ko+'에서 출발하는 거지? 좋아!'):('Departing from '+d.en+'? Nice!'));
+      var d=departById(S.depart); say(tl(d.ko+'에서 출발하는 거지? 좋아!','Departing from '+d.en+'? Nice!',d.ja+'から出発だね？いいね！'));
     };
   });
 }
 var REGIONS=[
-  {id:'wakkanai', x:0.32,y:0.11, diff:5, ko:'왓카나이', en:'Wakkanai',
+  {id:'wakkanai', x:0.32,y:0.11, diff:5, ko:'왓카나이', en:'Wakkanai', ja:'稚内',
     dko:'일본 최북단 항구 도시. 바람이 거세고 멀어서 큰맘 먹고 가는 곳이야.',
-    den:'Japan’s northernmost port — windy, remote, a real expedition.'},
-  {id:'shiretoko', x:0.875,y:0.27, diff:5, ko:'시레토코', en:'Shiretoko',
+    den:'Japan’s northernmost port — windy, remote, a real expedition.',
+    dja:'日本最北端の港町。風が強く遠いから、思い切って行く場所だよ。'},
+  {id:'shiretoko', x:0.875,y:0.27, diff:5, ko:'시레토코', en:'Shiretoko', ja:'知床',
     dko:'세계자연유산 원시림. 겨울 유빙이 장관이지만 오지라 난이도 최상.',
-    den:'A UNESCO wilderness — winter drift ice is stunning, but very remote.'},
-  {id:'biei', x:0.52,y:0.37, diff:3, ko:'비에이', en:'Biei',
+    den:'A UNESCO wilderness — winter drift ice is stunning, but very remote.',
+    dja:'世界自然遺産の原生林。冬の流氷は圧巻だけど秘境で難易度は最高。'},
+  {id:'biei', x:0.52,y:0.37, diff:3, ko:'비에이', en:'Biei', ja:'美瑛',
     dko:'언덕 풍경과 파란 연못으로 유명해. 후라노와 묶어 가면 좋아.',
-    den:'Rolling hills and the Blue Pond — pair it with Furano.'},
-  {id:'furano', x:0.50,y:0.46, diff:3, ko:'후라노', en:'Furano',
+    den:'Rolling hills and the Blue Pond — pair it with Furano.',
+    dja:'丘の風景と青い池で有名。富良野とセットで行くといいよ。'},
+  {id:'furano', x:0.50,y:0.46, diff:3, ko:'후라노', en:'Furano', ja:'富良野',
     dko:'설경과 라벤더의 고장. 겨울엔 스키 천국이지만 이동이 좀 멀어.',
-    den:'Snow fields and lavender — a ski paradise, but a bit far.'},
-  {id:'sapporo', x:0.34,y:0.55, diff:1, ko:'삿포로', en:'Sapporo',
+    den:'Snow fields and lavender — a ski paradise, but a bit far.',
+    dja:'雪景色とラベンダーの里。冬はスキー天国だけど移動はちょっと遠い。'},
+  {id:'sapporo', x:0.34,y:0.55, diff:1, ko:'삿포로', en:'Sapporo', ja:'札幌',
     dko:'홋카이도의 중심 도시. 눈축제·맛집·교통이 편해 첫 여행지로 딱이야.',
-    den:'Hokkaido’s hub — snow festival, food, easy transit. Great for first-timers.'},
-  {id:'otaru', x:0.29,y:0.47, diff:2, ko:'오타루', en:'Otaru',
+    den:'Hokkaido’s hub — snow festival, food, easy transit. Great for first-timers.',
+    dja:'北海道の中心都市。雪まつり・グルメ・交通が便利で初めての旅にぴったり。'},
+  {id:'otaru', x:0.29,y:0.47, diff:2, ko:'오타루', en:'Otaru', ja:'小樽',
     dko:'운하와 오르골당이 예쁜 항구 도시. 삿포로에서 당일치기로 좋아.',
-    den:'A pretty canal town — an easy day trip from Sapporo.'},
-  {id:'hakodate', x:0.11,y:0.89, diff:2, ko:'하코다테', en:'Hakodate',
+    den:'A pretty canal town — an easy day trip from Sapporo.',
+    dja:'運河とオルゴール堂がきれいな港町。札幌から日帰りにちょうどいい。'},
+  {id:'hakodate', x:0.11,y:0.89, diff:2, ko:'하코다테', en:'Hakodate', ja:'函館',
     dko:'세계적인 야경과 아침시장. 남쪽이라 접근성이 좋아.',
-    den:'World-famous night view and morning market — easy to reach in the south.'}
+    den:'World-famous night view and morning market — easy to reach in the south.',
+    dja:'世界的な夜景と朝市。南にあってアクセスが良いよ。'}
 ];
 function regionById(id){ for(var i=0;i<REGIONS.length;i++) if(REGIONS[i].id===id) return REGIONS[i]; return null; }
 /* Hokkaido silhouette traced from the reference mosaic map (Examples/map.png). */
@@ -1258,7 +1310,7 @@ function buildHokkaido(){
 var mapBuilt=false;
 function enterMap(){
   setDock();
-  say(S.lang==='ko'?'홋카이도야! 가고 싶은 곳을 마음껏 골라봐. 지역을 누르면 소개해줄게.':'Hokkaido! Pick all the spots you want — tap one for details.');
+  say(tl('홋카이도야! 가고 싶은 곳을 마음껏 골라봐. 지역을 누르면 소개해줄게.','Hokkaido! Pick all the spots you want — tap one for details.','北海道だよ！行きたい場所を好きなだけ選んで。地域をタップすると紹介するよ。'));
   if(!mapBuilt){
     mapBuilt=true;
     var W=BMP_W, H=BMP_H;
@@ -1311,7 +1363,7 @@ function renderMarkers(){
     el.setAttribute('data-id', rg.id);
     el.style.left=(rg.x*100)+'%'; el.style.top=(rg.y*100)+'%';
     var badge=inRoute?'<div class="mk-num">'+orders.join('·')+'</div>':'';
-    el.innerHTML='<div class="dot"></div>'+badge+'<div class="mlabel">'+(S.lang==='ko'?rg.ko:rg.en)+'</div>';
+    el.innerHTML='<div class="dot"></div>'+badge+'<div class="mlabel">'+tl(rg.ko,rg.en,rg.ja)+'</div>';
     el.onclick=function(e){ e.stopPropagation(); openPop(rg); };
     mk.appendChild(el);
   });
@@ -1340,23 +1392,23 @@ function drawRoute(){
 function addStop(id){
   S.route.push(id);
   afterRoute();
-  var rg=regionById(id), ko=S.lang==='ko', n=S.route.length, loop=(id===S.route[0] && n>1);
-  if(n===1) say(ko?(rg.ko+'에서 출발! 전광판에 행선지를 이어서 추가해봐.'):('Departing from '+rg.en+'! Add more stops to the board.'));
-  else if(loop) say(ko?(rg.ko+'(으)로 돌아오는 루트 완성! 멋진걸.'):('Looping back to '+rg.en+' — nice route!'));
-  else say(ko?(rg.ko+' 행선지 추가! ('+n+'번째)'):(rg.en+' added! (stop '+n+')'));
+  var rg=regionById(id), n=S.route.length, loop=(id===S.route[0] && n>1);
+  if(n===1) say(tl(rg.ko+'에서 출발! 전광판에 행선지를 이어서 추가해봐.','Departing from '+rg.en+'! Add more stops to the board.',rg.ja+'から出発！電光掲示板に行き先を続けて追加してみて。'));
+  else if(loop) say(tl(rg.ko+'(으)로 돌아오는 루트 완성! 멋진걸.','Looping back to '+rg.en+' — nice route!',rg.ja+'に戻るルート完成！いいね。'));
+  else say(tl(rg.ko+' 행선지 추가! ('+n+'번째)',rg.en+' added! (stop '+n+')',rg.ja+'を行き先に追加！（'+n+'番目）'));
 }
 /* remove a single stop from the board (✕ on a flap card) */
 function removeStop(idx){
   if(idx<0||idx>=S.route.length) return;
   var removed=S.route.splice(idx,1)[0];
   afterRoute();
-  var rr=regionById(removed), ko=S.lang==='ko';
-  say(ko?((rr?rr.ko:'')+' 행선지를 뺐어.'):('Removed '+(rr?rr.en:'')+'.'));
+  var rr=regionById(removed);
+  say(tl((rr?rr.ko:'')+' 행선지를 뺐어.','Removed '+(rr?rr.en:'')+'.',(rr?rr.ja:'')+'を行き先から外したよ。'));
 }
 function resetRoute(){
   if(!S.route.length) return;
   S.route=[]; afterRoute(); hidePop();
-  say(S.lang==='ko'?'전광판을 모두 비웠어. 출발지부터 다시 골라봐!':'Board cleared — pick a start again!');
+  say(tl('전광판을 모두 비웠어. 출발지부터 다시 골라봐!','Board cleared — pick a start again!','電光掲示板を全部空にしたよ。出発地からまた選んで！'));
 }
 /* render the departure board (전광판) */
 function updateBoard(){
@@ -1364,7 +1416,7 @@ function updateBoard(){
   if(!track) return;
   var ko=S.lang==='ko', route=S.route;
   if(!route.length){
-    track.innerHTML='<div class="dep-empty">'+(ko?'행선지가 비어 있어 · 지도에서 골라 추가':'Empty · tap the map to add')+'</div>';
+    track.innerHTML='<div class="dep-empty">'+tl('행선지가 비어 있어 · 지도에서 골라 추가','Empty · tap the map to add','行き先が空だよ · 地図から選んで追加')+'</div>';
     if(cnt) cnt.textContent='';
     return;
   }
@@ -1373,17 +1425,19 @@ function updateBoard(){
     var r=regionById(id); if(!r) return;
     if(idx>0) html+='<div class="dep-arrow">▸</div>';
     var isStart=idx===0;
-    var no=isStart?(ko?'출발':'DEP'):String(idx+1);
+    var no=isStart?tl('출발','DEP','出発'):String(idx+1);
+    /* main label in active lang; sub-label shows another script for the board look */
+    var mainName=tl(r.ko,r.en,r.ja), subName=ko?r.en:(S.lang==='ja'?r.ko:r.ja);
     html+='<div class="dep-card'+(isStart?' start':'')+'" data-idx="'+idx+'">'+
             '<div class="dep-x" data-idx="'+idx+'">✕</div>'+
             '<div class="dep-no">'+no+'</div>'+
-            '<div class="dep-name">'+(ko?r.ko:r.en)+'</div>'+
-            '<div class="dep-sub">'+(ko?r.en:r.ko)+'</div>'+
+            '<div class="dep-name">'+mainName+'</div>'+
+            '<div class="dep-sub">'+subName+'</div>'+
           '</div>';
   });
   track.innerHTML=html;
   track.scrollLeft=track.scrollWidth;
-  if(cnt) cnt.textContent=ko?('경유 '+S.dests.length+'곳 · '+route.length+'정거장'):(S.dests.length+' spots · '+route.length+' stops');
+  if(cnt) cnt.textContent=tl('경유 '+S.dests.length+'곳 · '+route.length+'정거장',S.dests.length+' spots · '+route.length+' stops','経由 '+S.dests.length+'カ所 · '+route.length+'駅');
   track.querySelectorAll('.dep-x').forEach(function(x){
     x.onclick=function(e){ e.stopPropagation(); removeStop(parseInt(x.getAttribute('data-idx'),10)); };
   });
@@ -1397,12 +1451,11 @@ function openPop(rg){
   popFor=rg.id;
   document.querySelectorAll('.mk.active').forEach(function(m){m.classList.remove('active');});
   var mkEl=document.querySelector('.mk[data-id="'+rg.id+'"]'); if(mkEl) mkEl.classList.add('active');
-  var ko=S.lang==='ko';
   var orders=[]; S.route.forEach(function(id,idx){ if(id===rg.id) orders.push(idx+1); });
   var isStart=orders.indexOf(1)>=0, inRoute=orders.length>0;
   var status='';
   if(inRoute){
-    if(isStart && orders.length>1) status=ko?'출발지 · 도착지':'Start · End';
+    if(isStart && orders.length>1) status=tl('출발지 · 도착지','Start · End','出発地 · 到着地');
     else if(isStart) status=tr('m_start');
     else status=orders.join('·')+tr('m_stopn');
   }
@@ -1411,11 +1464,11 @@ function openPop(rg){
   var pop=document.getElementById('rpop');
   pop.innerHTML=
     '<div class="rpop-x">✕</div>'+
-    '<div class="rpop-name">'+(ko?rg.ko:rg.en)+'</div>'+
+    '<div class="rpop-name">'+tl(rg.ko,rg.en,rg.ja)+'</div>'+
     (status?'<div class="rpop-route'+(isStart?' start':'')+'">'+status+'</div>':'')+
     '<div class="rpop-diff">'+tr('m_diff')+'</div>'+
     '<div class="rpop-stars">'+stars+'</div>'+
-    '<div class="rpop-desc">'+(ko?rg.dko:rg.den)+'</div>'+
+    '<div class="rpop-desc">'+tl(rg.dko,rg.den,rg.dja)+'</div>'+
     '<button class="rpop-btn on">'+btnLabel+'</button>';
   pop.style.left=(rg.x*100)+'%'; pop.style.top=(rg.y*100)+'%';
   pop.classList.toggle('below', rg.y<0.48);
@@ -1429,19 +1482,18 @@ function hidePop(){
   popFor=null;
 }
 function updateMapFoot(){
-  var uniq=S.dests.length, n=S.route.length, ko=S.lang==='ko';
+  var uniq=S.dests.length, n=S.route.length;
   var rb=document.getElementById('routeReset'); if(rb) rb.disabled=n<1;
   var btn=document.getElementById('mapNext');
   if(uniq<1){ btn.disabled=true; btn.textContent=tr('m_none'); }
-  else if(!S.depart){ btn.disabled=true; btn.textContent=ko?'출발지를 정해줘':'Pick a departure'; }
+  else if(!S.depart){ btn.disabled=true; btn.textContent=tl('출발지를 정해줘','Pick a departure','出発地を決めてね'); }
   else { btn.disabled=false; btn.textContent=tr('m_next')+' ›'; }
 }
 document.getElementById('mapNext').onclick=function(){
   if(!S.dests.length || !S.depart) return;
   S.dest=S.dests[0];
-  var ko=S.lang==='ko';
-  var names=S.route.map(function(id){var r=regionById(id);return r?(ko?r.ko:r.en):id;}).join(' ▸ ');
-  say(ko?('좋아 — '+names+'! 이 루트로 짜볼게. 몇 가지만 물어볼게.'):('Nice — '+names+'! Just a few questions.'));
+  var names=S.route.map(function(id){var r=regionById(id);return r?tl(r.ko,r.en,r.ja):id;}).join(' ▸ ');
+  say(tl('좋아 — '+names+'! 이 루트로 짜볼게. 몇 가지만 물어볼게.','Nice — '+names+'! Just a few questions.','よし — '+names+'！このルートで組むね。いくつか聞くよ。'));
   setTimeout(function(){ show('survey'); }, 600);
 };
 document.getElementById('routeReset').onclick=function(e){ e.stopPropagation(); resetRoute(); };
@@ -1449,13 +1501,13 @@ document.getElementById('markers').addEventListener('click', function(e){ if(e.t
 
 /* ===================== SURVEY ===================== */
 var PURPOSES=[
-  {id:'heal', ko:'힐링', en:'Chill'},
-  {id:'food', ko:'맛집', en:'Food'},
-  {id:'view', ko:'야경·사진', en:'Views'},
-  {id:'shop', ko:'쇼핑', en:'Shopping'},
-  {id:'onsen',ko:'온천', en:'Onsen'},
-  {id:'active',ko:'액티비티·스키', en:'Activity'},
-  {id:'culture',ko:'문화·역사', en:'History'}
+  {id:'heal', ko:'힐링', en:'Chill', ja:'癒やし'},
+  {id:'food', ko:'맛집', en:'Food', ja:'グルメ'},
+  {id:'view', ko:'야경·사진', en:'Views', ja:'夜景・写真'},
+  {id:'shop', ko:'쇼핑', en:'Shopping', ja:'ショッピング'},
+  {id:'onsen',ko:'온천', en:'Onsen', ja:'温泉'},
+  {id:'active',ko:'액티비티·스키', en:'Activity', ja:'アクティビティ・スキー'},
+  {id:'culture',ko:'문화·역사', en:'History', ja:'文化・歴史'}
 ];
 var surveyStep=0;
 function surveySteps(){
@@ -1467,14 +1519,14 @@ function surveySteps(){
 function enterSurvey(){ surveyStep=0; renderSurvey(); }
 function npcLineFor(step){
   var lines={
-    relation:{ko:'다들 무슨 사이야? 분위기 맞춰서 짜줄게.',en:'How do you all know each other? I’ll match the vibe.'},
-    purposes:{ko:'이번 여행, 어떤 느낌이면 좋겠어? 여러 개 골라도 돼!',en:'What should this trip feel like? Pick a few!'},
-    budget:{ko:'현지에서 쓸 수 있는 예산은 얼마야? (엔)',en:'How much can you spend on-site? (in yen)'},
-    visited:{ko:destName()+'는 처음이야, 아님 또 온 거야?',en:'First time in '+destName()+', or a return trip?'},
-    nights:{ko:'몇 박 며칠로 다녀올 거야?',en:'How many nights are we staying?'},
-    month:{ko:'언제 떠날래? 겨울에만 갈 수 있어!',en:'When are we going? Winter only!'},
-    transit:{ko:'현지에선 어떻게 돌아다닐 거야?',en:'How will you get around there?'},
-    pace:{ko:'여행 속도는? 알차게 vs 느긋하게.',en:'Your pace? Packed vs relaxed.'}
+    relation:{ko:'다들 무슨 사이야? 분위기 맞춰서 짜줄게.',en:'How do you all know each other? I’ll match the vibe.',ja:'みんなどんな関係？雰囲気に合わせて組むよ。'},
+    purposes:{ko:'이번 여행, 어떤 느낌이면 좋겠어? 여러 개 골라도 돼!',en:'What should this trip feel like? Pick a few!',ja:'今回の旅、どんな感じがいい？いくつ選んでもOK！'},
+    budget:{ko:'현지에서 쓸 수 있는 예산은 얼마야? (엔)',en:'How much can you spend on-site? (in yen)',ja:'現地で使える予算はいくら？（円）'},
+    visited:{ko:destName()+'는 처음이야, 아님 또 온 거야?',en:'First time in '+destName()+', or a return trip?',ja:destName()+'は初めて？それとも再訪？'},
+    nights:{ko:'몇 박 며칠로 다녀올 거야?',en:'How many nights are we staying?',ja:'何泊何日で行く？'},
+    month:{ko:'언제 떠날래? 겨울에만 갈 수 있어!',en:'When are we going? Winter only!',ja:'いつ出発する？冬しか行けないよ！'},
+    transit:{ko:'현지에선 어떻게 돌아다닐 거야?',en:'How will you get around there?',ja:'現地ではどうやって移動する？'},
+    pace:{ko:'여행 속도는? 알차게 vs 느긋하게.',en:'Your pace? Packed vs relaxed.',ja:'旅のペースは？ぎっしり vs ゆったり。'}
   };
   return L(lines[step]);
 }
@@ -1489,63 +1541,63 @@ function renderSurvey(){
   var num=(surveyStep+1)+' / '+steps.length;
   var body='';
   if(step==='relation'){
-    body=q('Q'+num, S.lang==='ko'?'일행은 어떤 사이야?':'What’s your party?')+
+    body=q('Q'+num, tl('일행은 어떤 사이야?','What’s your party?','仲間はどんな関係？'))+
       optGroup('relation',[
-        {id:'friend',ko:'친구',en:'Friends'},
-        {id:'family',ko:'가족',en:'Family'},
-        {id:'couple',ko:'연인',en:'Couple'},
-        {id:'solo_w',ko:'동료',en:'Coworkers'}
+        {id:'friend',ko:'친구',en:'Friends',ja:'友達'},
+        {id:'family',ko:'가족',en:'Family',ja:'家族'},
+        {id:'couple',ko:'연인',en:'Couple',ja:'恋人'},
+        {id:'solo_w',ko:'동료',en:'Coworkers',ja:'同僚'}
       ], S.survey.relation, false);
   }
   else if(step==='purposes'){
-    body=q('Q'+num, S.lang==='ko'?'여행의 느낌은? (최대 3개)':'Trip vibe? (up to 3)')+
+    body=q('Q'+num, tl('여행의 느낌은? (최대 3개)','Trip vibe? (up to 3)','旅の雰囲気は？（最大3つ）'))+
       optGroup('purposes',PURPOSES,S.survey.purposes,true)+
-      '<div class="q-hint">'+(S.lang==='ko'?'고를수록 너 취향대로 짜줄게.':'More picks = more personalized.')+'</div>';
+      '<div class="q-hint">'+tl('고를수록 너 취향대로 짜줄게.','More picks = more personalized.','選ぶほど好みに合わせて組むよ。')+'</div>';
   }
   else if(step==='budget'){
     var b=S.survey.budget;
-    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+(S.lang==='ko'?'현지 최대 경비는?':'Max on-site budget?')+'</div>'+
-      '<div class="budget-val">¥ <span id="bVal">'+b.toLocaleString()+'</span> <small>'+(S.lang==='ko'?'/ 1인':'/ person')+'</small></div>'+
+    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+tl('현지 최대 경비는?','Max on-site budget?','現地での最大予算は？')+'</div>'+
+      '<div class="budget-val">¥ <span id="bVal">'+b.toLocaleString()+'</span> <small>'+tl('/ 1인','/ person','/ 1人')+'</small></div>'+
       '<input type="range" id="bRange" min="10000" max="200000" step="5000" value="'+b+'">'+
       '<div class="budget-marks"><span>¥10,000</span><span>¥200,000</span></div>'+
       '<div class="budget-quick" id="bQuick"></div>';
   }
   else if(step==='visited'){
-    body=q('Q'+num, S.lang==='ko'?destName()+', 처음이야?':'First time here?')+
+    body=q('Q'+num, tl(destName()+', 처음이야?','First time here?',destName()+'は初めて？'))+
       optGroup('visited',[
-        {id:'first',ko:'처음이야',en:'First time'},
-        {id:'again',ko:'가본 적 있어',en:'Been before'}
+        {id:'first',ko:'처음이야',en:'First time',ja:'初めて'},
+        {id:'again',ko:'가본 적 있어',en:'Been before',ja:'行ったことがある'}
       ], S.survey.visited, false);
   }
   else if(step==='nights'){
     var nt=S.survey.nights;
-    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+(S.lang==='ko'?'얼마나 머물러?':'How long?')+'</div>'+
+    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+tl('얼마나 머물러?','How long?','どのくらい滞在する？')+'</div>'+
       '<div class="stepper"><button id="nMinus">−</button>'+
-      '<div class="nval"><span id="nVal">'+nt+'</span>'+(S.lang==='ko'?'박':'N')+'<small>'+(nt+1)+(S.lang==='ko'?'일':' days')+'</small></div>'+
+      '<div class="nval"><span id="nVal">'+nt+'</span>'+tl('박','N','泊')+'<small>'+(nt+1)+tl('일',' days','日')+'</small></div>'+
       '<button id="nPlus">+</button></div>';
   }
   else if(step==='month'){
-    var months=[{m:11,ko:'11월',en:'Nov'},{m:12,ko:'12월',en:'Dec'},{m:1,ko:'1월',en:'Jan'},{m:2,ko:'2월',en:'Feb'},{m:3,ko:'3월',en:'Mar'}];
+    var months=[{m:11,ko:'11월',en:'Nov',ja:'11月'},{m:12,ko:'12월',en:'Dec',ja:'12月'},{m:1,ko:'1월',en:'Jan',ja:'1月'},{m:2,ko:'2월',en:'Feb',ja:'2月'},{m:3,ko:'3월',en:'Mar',ja:'3月'}];
     var mo='<div class="months">';
     months.forEach(function(x){
-      mo+='<div class="opt month'+(S.survey.month===x.m?' sel':'')+'" data-m="'+x.m+'">'+(S.lang==='ko'?x.ko:x.en)+'</div>';
+      mo+='<div class="opt month'+(S.survey.month===x.m?' sel':'')+'" data-m="'+x.m+'">'+tl(x.ko,x.en,x.ja)+'</div>';
     });
     mo+='</div>';
-    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+(S.lang==='ko'?'언제 갈래? (11~3월)':'When? (Nov–Mar)')+'</div>'+mo+
-      '<div class="q-hint">'+(S.lang==='ko'?'한겨울일수록 눈·야경·온천이 진해져.':'Deep winter = more snow, night views, onsen.')+'</div>';
+    body='<div class="qnum">Q'+num+'</div><div class="qtitle">'+tl('언제 갈래? (11~3월)','When? (Nov–Mar)','いつ行く？（11〜3月）')+'</div>'+mo+
+      '<div class="q-hint">'+tl('한겨울일수록 눈·야경·온천이 진해져.','Deep winter = more snow, night views, onsen.','真冬ほど雪・夜景・温泉が濃くなるよ。')+'</div>';
   }
   else if(step==='transit'){
-    body=q('Q'+num, S.lang==='ko'?'현지 이동은 어떻게?':'Getting around?')+
+    body=q('Q'+num, tl('현지 이동은 어떻게?','Getting around?','現地の移動はどうする？'))+
       optGroup('transit',[
-        {id:'transit',ko:'뚜벅이(트램·버스)',en:'Tram & bus'},
-        {id:'car',ko:'렌터카',en:'Rental car'}
+        {id:'transit',ko:'뚜벅이(트램·버스)',en:'Tram & bus',ja:'徒歩（市電・バス）'},
+        {id:'car',ko:'렌터카',en:'Rental car',ja:'レンタカー'}
       ], S.survey.transit, false);
   }
   else if(step==='pace'){
-    body=q('Q'+num, S.lang==='ko'?'여행 속도는?':'Your pace?')+
+    body=q('Q'+num, tl('여행 속도는?','Your pace?','旅のペースは？'))+
       optGroup('pace',[
-        {id:'packed',ko:'알차게',en:'Packed'},
-        {id:'relaxed',ko:'느긋하게',en:'Relaxed'}
+        {id:'packed',ko:'알차게',en:'Packed',ja:'ぎっしり'},
+        {id:'relaxed',ko:'느긋하게',en:'Relaxed',ja:'ゆったり'}
       ], S.survey.pace, false);
   }
   qc.innerHTML=body;
@@ -1561,7 +1613,7 @@ function optGroup(key,arr,cur,multi){
   var h='<div class="opts">';
   arr.forEach(function(o){
     var on = multi ? (cur.indexOf(o.id)>=0) : (cur===o.id);
-    h+='<div class="opt'+(multi?' multi':'')+(on?' sel':'')+'" data-k="'+key+'" data-id="'+o.id+'">'+(S.lang==='ko'?o.ko:o.en)+'</div>';
+    h+='<div class="opt'+(multi?' multi':'')+(on?' sel':'')+'" data-k="'+key+'" data-id="'+o.id+'">'+tl(o.ko,o.en,o.ja)+'</div>';
   });
   h+='</div>'; return h;
 }
@@ -1584,8 +1636,8 @@ function wireSurvey(step){
     var rng=document.getElementById('bRange');
     rng.oninput=function(){ S.survey.budget=parseInt(this.value); document.getElementById('bVal').textContent=S.survey.budget.toLocaleString(); };
     var bq=document.getElementById('bQuick');
-    [['아껴서','Tight',20000],['적당히','Mid',45000],['넉넉히','Plenty',90000],['플렉스','Flex',150000]].forEach(function(p){
-      var d=document.createElement('div'); d.className='opt'; d.textContent=S.lang==='ko'?p[0]:p[1];
+    [['아껴서','Tight',20000,'節約'],['적당히','Mid',45000,'ほどほど'],['넉넉히','Plenty',90000,'たっぷり'],['플렉스','Flex',150000,'フレックス']].forEach(function(p){
+      var d=document.createElement('div'); d.className='opt'; d.textContent=tl(p[0],p[1],p[3]);
       d.onclick=function(){ S.survey.budget=p[2]; rng.value=p[2]; document.getElementById('bVal').textContent=p[2].toLocaleString(); };
       bq.appendChild(d);
     });
@@ -1623,6 +1675,8 @@ function startLoading(){
   var img=document.getElementById('loadNpc'); img.src=SPR+n.img; img.style.width=(n.w)+'px';
   var lines = S.lang==='ko'
     ? ['눈길을 살피는 중...','맛집 좌표 찍는 중...','야경 시간 계산 중...','예산 맞추는 중...','루트 완성!']
+    : S.lang==='ja'
+    ? ['雪道を調べてるところ...','グルメの座標を打ち込み中...','夜景の時間を計算中...','予算を合わせてるところ...','ルート完成！']
     : ['Scanning snowy trails...','Marking tasty spots...','Timing the night views...','Fitting the budget...','Route ready!'];
   var fill=document.getElementById('loadFill'), pct=document.getElementById('loadPct'), line=document.getElementById('loadLine');
   var p=0;
@@ -1639,296 +1693,408 @@ var POI_BY_REGION={
  hakodate:[
   {id:'asaichi', icon:'ore', meal:true, slot:'morning', cost:2200, cat:['food'],
     ko:'하코다테 아침시장', en:'Hakodate Morning Market', areako:'역 앞', areaen:'By the station',
+    ja:'函館朝市', areaja:'駅前',
     dko:'갓 잡은 오징어 활어회랑 해산물 덮밥으로 아침을 든든하게. 직접 낚는 오징어 낚시터도 있어.',
     den:'Start with live squid sashimi and a fresh seafood bowl. You can even fish your own squid.',
-    tko:'오징어 소면은 여기서 꼭 먹어봐.', ten:'Don’t skip the live squid somen.'},
+    dja:'活イカの活き造りや海鮮丼でしっかり朝ごはん。自分で釣れるイカ釣り場もあるよ。',
+    tko:'오징어 소면은 여기서 꼭 먹어봐.', ten:'Don’t skip the live squid somen.', tja:'イカそうめんはここで必ず食べてみて。'},
   {id:'lucky', icon:'ore', meal:true, slot:'lunch', cost:900, cat:['food'],
     ko:'럭키피에로', en:'Lucky Pierrot', areako:'베이 에어리어', areaen:'Bay Area',
+    ja:'ラッキーピエロ', areaja:'ベイエリア',
     dko:'하코다테에만 있는 전설의 수제버거. 차이니즈 치킨버거가 시그니처야.',
     den:'A legendary local burger chain found only in Hakodate. Get the Chinese Chicken Burger.',
-    tko:'양 많으니까 배고플 때 가자.', ten:'Portions are huge — go hungry.'},
+    dja:'函館にしかない伝説のご当地バーガー。チャイニーズチキンバーガーが看板メニュー。',
+    tko:'양 많으니까 배고플 때 가자.', ten:'Portions are huge — go hungry.', tja:'量が多いからお腹を空かせて行こう。'},
   {id:'ajisai', icon:'ore', meal:true, slot:'lunch', cost:1000, cat:['food'],
     ko:'아지사이 시오라멘', en:'Ajisai Shio Ramen', areako:'고료카쿠', areaen:'Goryokaku',
+    ja:'あじさい 塩ラーメン', areaja:'五稜郭',
     dko:'맑고 깔끔한 하코다테식 소금라멘. 추운 날 속을 데우기 딱 좋아.',
     den:'Clear, clean Hakodate-style salt ramen — perfect to warm up on a cold day.',
-    tko:'본점은 고료카쿠 근처에 있어.', ten:'The main shop is near Goryokaku.'},
+    dja:'澄んだあっさり函館式塩ラーメン。寒い日に体を温めるのにぴったり。',
+    tko:'본점은 고료카쿠 근처에 있어.', ten:'The main shop is near Goryokaku.', tja:'本店は五稜郭の近くにあるよ。'},
   {id:'genghis', icon:'ore', meal:true, slot:'dinner', cost:3000, cat:['food'],
     ko:'징기스칸 양고기', en:'Genghis Khan Lamb BBQ', areako:'시내', areaen:'Downtown',
+    ja:'ジンギスカン', areaja:'市街',
     dko:'홋카이도 명물 양고기 철판구이. 불판 위에서 지글지글, 겨울밤에 최고야.',
     den:'Hokkaido’s famous grilled lamb. Sizzling on the iron plate — best on a winter night.',
-    tko:'생맥주 한 잔이면 완벽해.', ten:'A cold draft beer completes it.'},
+    dja:'北海道名物の羊肉鉄板焼き。鉄板の上でジュージュー、冬の夜に最高。',
+    tko:'생맥주 한 잔이면 완벽해.', ten:'A cold draft beer completes it.', tja:'生ビール一杯で完璧。'},
   {id:'ropeway', icon:'mountain', slot:'night', cost:1800, cat:['view','heal'], winter:true,
     ko:'하코다테산 야경', en:'Mt. Hakodate Night View', areako:'하코다테산', areaen:'Mt. Hakodate',
+    ja:'函館山の夜景', areaja:'函館山',
     dko:'세계 3대 야경 중 하나. 로프웨이 타고 올라가면 반짝이는 도시가 한눈에 펼쳐져.',
     den:'One of the world’s top 3 night views. Ride the ropeway to see the whole glittering city.',
-    tko:'해 지기 30분 전에 올라가면 명장면을 다 봐.', ten:'Go up 30 min before sunset for the full show.'},
+    dja:'世界三大夜景のひとつ。ロープウェイで上ると、きらめく街並みが一望できるよ。',
+    tko:'해 지기 30분 전에 올라가면 명장면을 다 봐.', ten:'Go up 30 min before sunset for the full show.', tja:'日没の30分前に上ると名シーンを全部見られるよ。'},
   {id:'motomachi', icon:'staff', slot:'after', cost:0, cat:['view','culture','heal'],
     ko:'모토마치 언덕길', en:'Motomachi Slopes', areako:'모토마치', areaen:'Motomachi',
+    ja:'元町の坂道', areaja:'元町',
     dko:'하치만자카 언덕에서 바다까지 일직선. 옛 서양식 건물과 교회가 그림 같아.',
     den:'Hachiman-zaka slope runs straight to the sea, framed by old Western buildings and churches.',
-    tko:'눈 쌓인 언덕길이 인생샷 포인트야.', ten:'The snowy slope is the photo spot.'},
+    dja:'八幡坂から海まで一直線。古い西洋風の建物と教会が絵のよう。',
+    tko:'눈 쌓인 언덕길이 인생샷 포인트야.', ten:'The snowy slope is the photo spot.', tja:'雪の積もった坂道がベストフォトスポット。'},
   {id:'kanemori', icon:'ore', slot:'after', cost:2500, cat:['shop','food'],
     ko:'가네모리 아카렌가 창고', en:'Kanemori Red Brick Warehouses', areako:'베이 에어리어', areaen:'Bay Area',
+    ja:'金森赤レンガ倉庫', areaja:'ベイエリア',
     dko:'붉은 벽돌 창고를 개조한 쇼핑·카페 거리. 기념품이랑 디저트 천국이야.',
     den:'Red-brick warehouses turned into shops and cafes — souvenir and dessert heaven.',
-    tko:'겨울엔 창고 앞 크리스마스 트리가 예뻐.', ten:'In winter the waterfront tree is gorgeous.'},
+    dja:'赤レンガ倉庫を改装したショップ・カフェ街。お土産とスイーツの天国だよ。',
+    tko:'겨울엔 창고 앞 크리스마스 트리가 예뻐.', ten:'In winter the waterfront tree is gorgeous.', tja:'冬は倉庫前のクリスマスツリーがきれい。'},
   {id:'goryokaku', icon:'staff', slot:'morning', cost:1000, cat:['culture','view'], winter:true,
     ko:'고료카쿠 타워', en:'Goryokaku Tower', areako:'고료카쿠', areaen:'Goryokaku',
+    ja:'五稜郭タワー', areaja:'五稜郭',
     dko:'별 모양 성곽을 타워 전망대에서 내려다봐. 겨울엔 별 모양 일루미네이션이 켜져.',
     den:'See the star-shaped fort from the tower deck. In winter the whole star lights up.',
-    tko:'밤엔 별의 꿈 일루미네이션을 노려봐.', ten:'At night, catch the “Star’s Dream” illumination.'},
+    dja:'星形の城郭をタワー展望台から見下ろそう。冬は星形のイルミネーションが灯るよ。',
+    tko:'밤엔 별의 꿈 일루미네이션을 노려봐.', ten:'At night, catch the “Star’s Dream” illumination.', tja:'夜は「五稜星の夢」イルミネーションを狙ってみて。'},
   {id:'yunokawa', icon:'cave_entrance', slot:'night', cost:1500, cat:['onsen','heal'], winter:true,
     ko:'유노카와 온천', en:'Yunokawa Onsen', areako:'유노카와', areaen:'Yunokawa',
+    ja:'湯の川温泉', areaja:'湯の川',
     dko:'바다를 보며 몸을 녹이는 온천 마을. 눈 내리는 노천탕은 겨울에만 누리는 호사야.',
     den:'A seaside hot-spring town. A snowy open-air bath is a winter-only luxury.',
-    tko:'무료 족욕탕도 있으니 가볍게 즐겨도 돼.', ten:'There’s a free foot bath too.'},
+    dja:'海を眺めながら体を温める温泉街。雪の降る露天風呂は冬だけの贅沢だよ。',
+    tko:'무료 족욕탕도 있으니 가볍게 즐겨도 돼.', ten:'There’s a free foot bath too.', tja:'無料の足湯もあるから気軽に楽しんでもいいよ。'},
   {id:'onuma', icon:'mountain', slot:'morning', cost:3500, cat:['active','view','heal'], winter:true,
     ko:'오누마 공원', en:'Onuma Park', areako:'근교', areaen:'Near Hakodate',
+    ja:'大沼公園', areaja:'近郊',
     dko:'얼어붙은 호수와 눈 덮인 코마가타케 화산. 겨울엔 스노슈·썰매·빙어낚시까지 가능해.',
     den:'A frozen lake under snow-capped Mt. Komagatake. Try snowshoeing, sledding, or ice fishing.',
-    tko:'기차로 30분, 당일치기 눈놀이 코스로 딱.', ten:'30 min by train — a perfect snow day trip.'},
+    dja:'凍った湖と雪をかぶった駒ヶ岳。冬はスノーシュー・そり・ワカサギ釣りまで楽しめるよ。',
+    tko:'기차로 30분, 당일치기 눈놀이 코스로 딱.', ten:'30 min by train — a perfect snow day trip.', tja:'電車で30分、日帰りの雪遊びコースにぴったり。'},
   {id:'trappistine', icon:'staff', slot:'after', cost:0, cat:['culture','heal'],
     ko:'트라피스틴 수도원', en:'Trappistine Convent', areako:'근교', areaen:'Near Hakodate',
+    ja:'トラピスチヌ修道院', areaja:'近郊',
     dko:'붉은 벽돌과 눈이 어우러진 고요한 수도원. 수제 마들렌과 캔디가 유명해.',
     den:'A quiet convent of red brick and snow, famous for handmade madeleines and candy.',
-    tko:'한적해서 마음이 차분해지는 곳이야.', ten:'Peaceful and calming — escape the crowds.'},
+    dja:'赤レンガと雪が調和した静かな修道院。手作りマドレーヌとキャンディが有名。',
+    tko:'한적해서 마음이 차분해지는 곳이야.', ten:'Peaceful and calming — escape the crowds.', tja:'人が少なくて心が落ち着く場所だよ。'},
   {id:'hachiman', icon:'staff', slot:'after', cost:0, cat:['view','heal'], winter:true,
     ko:'니주켄자카 일루미네이션', en:'Nijukken-zaka Illumination', areako:'모토마치', areaen:'Motomachi',
+    ja:'二十間坂イルミネーション', areaja:'元町',
     dko:'겨울 저녁, 가로수에 불이 들어오는 낭만 언덕길. 산책하기 좋아.',
     den:'On winter evenings the slope’s trees light up — a romantic stroll.',
-    tko:'야경 보러 가기 전에 들르면 동선이 좋아.', ten:'Stop by before the night view — great route.'},
+    dja:'冬の夕方、街路樹に灯りがともるロマンチックな坂道。散歩にぴったり。',
+    tko:'야경 보러 가기 전에 들르면 동선이 좋아.', ten:'Stop by before the night view — great route.', tja:'夜景を見に行く前に寄ると動線がいいよ。'},
   {id:'beer', icon:'ore', meal:true, slot:'dinner', cost:2600, cat:['food','heal'],
     ko:'하코다테 맥주관', en:'Hakodate Beer Hall', areako:'베이 에어리어', areaen:'Bay Area',
+    ja:'函館ビヤホール', areaja:'ベイエリア',
     dko:'직접 만든 지역 맥주와 해산물 안주. 따뜻한 분위기에서 하루를 마무리해.',
     den:'House-brewed local beer with seafood plates — a warm way to end the day.',
-    tko:'무알콜도 있으니 운전자도 OK.', ten:'Non-alcoholic options too — drivers welcome.'},
+    dja:'自家醸造の地ビールと海鮮のおつまみ。温かい雰囲気で一日を締めくくろう。',
+    tko:'무알콜도 있으니 운전자도 OK.', ten:'Non-alcoholic options too — drivers welcome.', tja:'ノンアルもあるからドライバーもOK。'},
   {id:'church', icon:'staff', slot:'after', cost:0, cat:['culture','view'],
     ko:'모토마치 성공회 교회', en:'Motomachi Churches', areako:'모토마치', areaen:'Motomachi',
+    ja:'元町の教会群', areaja:'元町',
     dko:'가톨릭·성공회·정교회가 모인 이국적인 골목. 사진 찍기 정말 좋아.',
     den:'Catholic, Anglican and Orthodox churches in one exotic lane — a photo dream.',
-    tko:'눈 오는 날 더 분위기 있어.', ten:'Even prettier when it snows.'}
+    dja:'カトリック・聖公会・正教会が集まった異国情緒あふれる路地。写真撮影に最高。',
+    tko:'눈 오는 날 더 분위기 있어.', ten:'Even prettier when it snows.', tja:'雪の日はもっと雰囲気があるよ。'}
  ],
  sapporo:[
   {id:'s_market', icon:'ore', meal:true, slot:'morning', cost:2000, cat:['food'],
     ko:'니조 시장', en:'Nijo Market', areako:'시내', areaen:'Downtown',
+    ja:'二条市場', areaja:'市街',
     dko:'갓 잡은 게·연어알·성게가 듬뿍 올라간 해산물 덮밥으로 아침을 시작해.',
     den:'Start with a seafood bowl piled with crab, salmon roe and sea urchin.',
-    tko:'아침 일찍 가야 신선하고 한산해.', ten:'Go early for the freshest, quietest market.'},
+    dja:'採れたてのカニ・いくら・ウニがたっぷりのった海鮮丼で朝をスタート。',
+    tko:'아침 일찍 가야 신선하고 한산해.', ten:'Go early for the freshest, quietest market.', tja:'朝早く行くと新鮮で空いてるよ。'},
   {id:'s_ramen', icon:'ore', meal:true, slot:'lunch', cost:1100, cat:['food'],
     ko:'삿포로 미소라멘', en:'Sapporo Miso Ramen', areako:'스스키노', areaen:'Susukino',
+    ja:'札幌味噌ラーメン', areaja:'すすきの',
     dko:'진한 된장 국물에 옥수수·버터를 올린 삿포로식 라멘. 추위가 싹 가셔.',
     den:'Rich miso broth topped with corn and butter — the cure for the cold.',
-    tko:'라멘요코초 골목에서 골라 먹는 재미가 있어.', ten:'Hit Ramen Yokocho alley for the full experience.'},
+    dja:'濃厚な味噌スープにコーン・バターをのせた札幌式ラーメン。寒さが吹き飛ぶよ。',
+    tko:'라멘요코초 골목에서 골라 먹는 재미가 있어.', ten:'Hit Ramen Yokocho alley for the full experience.', tja:'ラーメン横丁で選んで食べる楽しみがあるよ。'},
   {id:'s_genghis', icon:'ore', meal:true, slot:'dinner', cost:3200, cat:['food'],
     ko:'삿포로 징기스칸', en:'Sapporo Genghis Khan', areako:'시내', areaen:'Downtown',
+    ja:'札幌ジンギスカン', areaja:'市街',
     dko:'양고기 철판구이의 본고장. 연기 자욱한 가게에서 지글지글 구워 먹어.',
     den:'The home of grilled mutton — sizzle it yourself in a smoky local joint.',
-    tko:'다루마가 가장 유명한 노포야.', ten:'Daruma is the most famous old-school spot.'},
+    dja:'羊肉鉄板焼きの本場。煙が立ちこめるお店でジュージュー焼いて食べよう。',
+    tko:'다루마가 가장 유명한 노포야.', ten:'Daruma is the most famous old-school spot.', tja:'だるまが一番有名な老舗だよ。'},
   {id:'s_odori', icon:'staff', slot:'after', cost:0, cat:['view','heal'], winter:true,
     ko:'오도리 공원', en:'Odori Park', areako:'도심', areaen:'City center',
+    ja:'大通公園', areaja:'都心',
     dko:'겨울엔 눈축제와 화이트 일루미네이션이 펼쳐지는 도심 속 설경 공원.',
     den:'In winter it hosts the Snow Festival and white illumination right downtown.',
-    tko:'2월 눈축제 기간이면 대형 눈조각이 압권.', ten:'During the Feb Snow Festival the giant snow sculptures are unreal.'},
+    dja:'冬は雪まつりとホワイトイルミネーションが広がる都心の雪景色公園。',
+    tko:'2월 눈축제 기간이면 대형 눈조각이 압권.', ten:'During the Feb Snow Festival the giant snow sculptures are unreal.', tja:'2月の雪まつり期間は大型雪像が圧巻。'},
   {id:'s_moiwa', icon:'mountain', slot:'night', cost:1700, cat:['view','heal'], winter:true,
     ko:'모이와산 야경', en:'Mt. Moiwa Night View', areako:'모이와산', areaen:'Mt. Moiwa',
+    ja:'藻岩山の夜景', areaja:'藻岩山',
     dko:'로프웨이로 올라가 보는 삿포로의 보석 같은 야경. 일본 신 3대 야경이야.',
     den:'Ride up for Sapporo’s jewel-box night view — one of Japan’s new top 3.',
-    tko:'케이블카+미니케이블카 연계 티켓을 끊어.', ten:'Get the combined ropeway + mini-cable ticket.'},
+    dja:'ロープウェイで上って見る札幌の宝石のような夜景。日本新三大夜景だよ。',
+    tko:'케이블카+미니케이블카 연계 티켓을 끊어.', ten:'Get the combined ropeway + mini-cable ticket.', tja:'ロープウェイ＋ミニケーブルのセット券を買おう。'},
   {id:'s_shiroi', icon:'staff', slot:'morning', cost:800, cat:['culture','shop'], winter:true,
     ko:'시로이코이비토 파크', en:'Shiroi Koibito Park', areako:'서부', areaen:'West Sapporo',
+    ja:'白い恋人パーク', areaja:'西部',
     dko:'유럽풍 과자 테마파크. 겨울 일루미네이션과 쿠키 만들기 체험이 있어.',
     den:'A European-style sweets park with winter lights and a cookie-making workshop.',
-    tko:'대표 과자 시로이코이비토는 기념품 1순위.', ten:'The signature cookies are the top souvenir.'},
+    dja:'ヨーロッパ風のお菓子テーマパーク。冬のイルミネーションとクッキー作り体験があるよ。',
+    tko:'대표 과자 시로이코이비토는 기념품 1순위.', ten:'The signature cookies are the top souvenir.', tja:'看板菓子の白い恋人はお土産の定番。'},
   {id:'s_beer', icon:'ore', meal:true, slot:'dinner', cost:2600, cat:['food','culture'],
     ko:'삿포로 맥주 박물관', en:'Sapporo Beer Museum', areako:'동부', areaen:'East Sapporo',
+    ja:'サッポロビール博物館', areaja:'東部',
     dko:'붉은 벽돌 양조장에서 즐기는 갓 뽑은 생맥주와 양고기 비어가든.',
     den:'Fresh-poured draft and a lamb beer garden in a historic red-brick brewery.',
-    tko:'3종 비교 시음 세트를 노려봐.', ten:'Try the three-beer tasting flight.'},
+    dja:'赤レンガの醸造所で楽しむ注ぎたての生ビールとジンギスカンのビアガーデン。',
+    tko:'3종 비교 시음 세트를 노려봐.', ten:'Try the three-beer tasting flight.', tja:'3種飲み比べセットを狙ってみて。'},
   {id:'s_susukino', icon:'staff', slot:'after', cost:0, cat:['view','shop'], winter:true,
     ko:'스스키노 네온거리', en:'Susukino Neon Street', areako:'스스키노', areaen:'Susukino',
+    ja:'すすきののネオン街', areaja:'すすきの',
     dko:'홋카이도 최대 번화가. 눈 내리는 밤, 네온과 아이스바가 어우러져.',
     den:'Hokkaido’s biggest nightlife district — neon and ice bars in the falling snow.',
-    tko:'눈축제 땐 얼음조각(스스키노 아이스월드)도 봐.', ten:'During the festival, catch the Susukino ice sculptures.'}
+    dja:'北海道最大の繁華街。雪の降る夜、ネオンと氷のバーが溶け合うよ。',
+    tko:'눈축제 땐 얼음조각(스스키노 아이스월드)도 봐.', ten:'During the festival, catch the Susukino ice sculptures.', tja:'雪まつりの時はすすきのアイスワールドの氷彫刻も見てね。'}
  ],
  otaru:[
   {id:'o_market', icon:'ore', meal:true, slot:'morning', cost:1800, cat:['food'],
     ko:'산카쿠 시장', en:'Sankaku Market', areako:'역 앞', areaen:'By the station',
+    ja:'三角市場', areaja:'駅前',
     dko:'작은 시장 식당에서 먹는 푸짐한 해산물 덮밥. 게와 성게가 신선해.',
     den:'Generous seafood bowls in tiny market diners — super-fresh crab and uni.',
-    tko:'가게마다 덮밥 구성이 다르니 골라봐.', ten:'Each stall has its own bowl — shop around.'},
+    dja:'小さな市場食堂で食べるボリューム満点の海鮮丼。カニとウニが新鮮。',
+    tko:'가게마다 덮밥 구성이 다르니 골라봐.', ten:'Each stall has its own bowl — shop around.', tja:'店ごとに丼の構成が違うから選んでみて。'},
   {id:'o_sushi', icon:'ore', meal:true, slot:'lunch', cost:3000, cat:['food'],
     ko:'오타루 스시거리', en:'Otaru Sushi Street', areako:'스시야도리', areaen:'Sushiya-dori',
+    ja:'小樽寿司屋通り', areaja:'寿司屋通り',
     dko:'항구 도시의 신선한 초밥 거리. 점심 오마카세가 가성비 좋아.',
     den:'A street of fresh harbour-town sushi — the lunch omakase is great value.',
-    tko:'예약 없이 가려면 오픈 직후를 노려.', ten:'No reservation? Go right at opening.'},
+    dja:'港町の新鮮なお寿司通り。ランチのおまかせがコスパ良し。',
+    tko:'예약 없이 가려면 오픈 직후를 노려.', ten:'No reservation? Go right at opening.', tja:'予約なしで行くなら開店直後を狙って。'},
   {id:'o_canal', icon:'staff', slot:'night', cost:0, cat:['view','heal'], winter:true,
     ko:'오타루 운하', en:'Otaru Canal', areako:'운하', areaen:'Canal',
+    ja:'小樽運河', areaja:'運河',
     dko:'가스등이 켜진 운하의 설경. 겨울 ‘눈빛의 길’ 축제 땐 촛불이 운하를 수놓아.',
     den:'A gaslit canal in the snow — magical during the winter Snow Light Path festival.',
-    tko:'해 질 무렵 가스등이 켜지는 순간이 최고.', ten:'Come at dusk when the gas lamps flicker on.'},
+    dja:'ガス灯がともる運河の雪景色。冬の「雪あかりの路」祭りの時はろうそくが運河を彩るよ。',
+    tko:'해 질 무렵 가스등이 켜지는 순간이 최고.', ten:'Come at dusk when the gas lamps flicker on.', tja:'夕暮れにガス灯がともる瞬間が最高。'},
   {id:'o_music', icon:'staff', slot:'after', cost:0, cat:['culture','shop'],
     ko:'오르골당', en:'Music Box Museum', areako:'사카이마치', areaen:'Sakaimachi',
+    ja:'オルゴール堂', areaja:'堺町',
     dko:'증기시계 앞 오르골 전문점. 수천 개의 오르골 소리가 가득해.',
     den:'A music-box emporium by the steam clock, filled with thousands of melodies.',
-    tko:'나만의 오르골 만들기 체험도 가능해.', ten:'You can assemble your own music box.'},
+    dja:'蒸気時計の前のオルゴール専門店。数千個のオルゴールの音色でいっぱい。',
+    tko:'나만의 오르골 만들기 체험도 가능해.', ten:'You can assemble your own music box.', tja:'自分だけのオルゴール作り体験もできるよ。'},
   {id:'o_glass', icon:'staff', slot:'after', cost:500, cat:['culture','shop'],
     ko:'키타이치 글라스', en:'Kitaichi Glass', areako:'사카이마치', areaen:'Sakaimachi',
+    ja:'北一硝子', areaja:'堺町',
     dko:'유리공예와 167개 석유램프가 켜진 홀 카페가 유명한 거리.',
     den:'Glass craft and a hall café lit by 167 oil lamps.',
-    tko:'램프 홀에서 마시는 따뜻한 음료가 분위기 최고.', ten:'A hot drink in the lamp hall is pure mood.'},
+    dja:'ガラス工芸と167個の石油ランプが灯るホールカフェが有名な通り。',
+    tko:'램프 홀에서 마시는 따뜻한 음료가 분위기 최고.', ten:'A hot drink in the lamp hall is pure mood.', tja:'ランプホールで飲む温かいドリンクが雰囲気抜群。'},
   {id:'o_letao', icon:'ore', meal:true, slot:'after', cost:900, cat:['food','shop'],
     ko:'르타오 본점 카페', en:'LeTAO Café', areako:'사카이마치', areaen:'Sakaimachi',
+    ja:'ルタオ本店カフェ', areaja:'堺町',
     dko:'입에서 녹는 더블 치즈케이크로 유명한 카페. 2층 전망도 좋아.',
     den:'Famous for melt-in-your-mouth double cheesecake, with a nice upstairs view.',
-    tko:'갓 구운 치즈케이크는 매장에서만 맛봐.', ten:'The warm fresh cheesecake is shop-only.'},
+    dja:'口でとろけるドゥーブルフロマージュで有名なカフェ。2階の眺めもいいよ。',
+    tko:'갓 구운 치즈케이크는 매장에서만 맛봐.', ten:'The warm fresh cheesecake is shop-only.', tja:'焼きたてのチーズケーキは店舗限定。'},
   {id:'o_tengu', icon:'mountain', slot:'night', cost:1400, cat:['view'], winter:true,
     ko:'텐구야마 로프웨이', en:'Mt. Tengu Ropeway', areako:'텐구야마', areaen:'Mt. Tengu',
+    ja:'天狗山ロープウェイ', areaja:'天狗山',
     dko:'오타루 시내와 이시카리 만을 한눈에 담는 야경 명소.',
     den:'A night-view peak overlooking Otaru and Ishikari Bay.',
-    tko:'스키도 즐길 수 있는 작은 슬로프가 있어.', ten:'There’s a small ski slope at the top too.'}
+    dja:'小樽市街と石狩湾を一望できる夜景の名所。',
+    tko:'스키도 즐길 수 있는 작은 슬로프가 있어.', ten:'There’s a small ski slope at the top too.', tja:'スキーも楽しめる小さなゲレンデがあるよ。'}
  ],
  furano:[
   {id:'f_morning', icon:'ore', meal:true, slot:'morning', cost:1200, cat:['food'],
     ko:'후라노 베이커리 아침', en:'Furano Bakery Morning', areako:'시내', areaen:'Town',
+    ja:'富良野ベーカリーの朝', areaja:'市街',
     dko:'갓 구운 빵과 후라노 우유로 시작하는 든든한 시골 아침.',
     den:'Fresh-baked bread and Furano milk for a hearty countryside breakfast.',
-    tko:'후라노 우유 푸딩도 꼭 챙겨.', ten:'Grab the Furano milk pudding too.'},
+    dja:'焼きたてのパンと富良野牛乳で始める、しっかり田舎の朝ごはん。',
+    tko:'후라노 우유 푸딩도 꼭 챙겨.', ten:'Grab the Furano milk pudding too.', tja:'富良野牛乳プリンも忘れずに。'},
   {id:'f_curry', icon:'ore', meal:true, slot:'lunch', cost:1300, cat:['food'],
     ko:'후라노 오므카레', en:'Furano Omurice Curry', areako:'시내', areaen:'Town',
+    ja:'富良野オムカレー', areaja:'市街',
     dko:'지역 채소를 듬뿍 넣은 후라노 명물 오므카레. 든든하게 배를 채워.',
     den:'Furano’s signature omurice curry, loaded with local veggies.',
-    tko:'후라노 와인 한 잔과도 잘 어울려.', ten:'Pairs nicely with a glass of Furano wine.'},
+    dja:'地元野菜をたっぷり入れた富良野名物のオムカレー。しっかりお腹を満たそう。',
+    tko:'후라노 와인 한 잔과도 잘 어울려.', ten:'Pairs nicely with a glass of Furano wine.', tja:'富良野ワイン一杯ともよく合うよ。'},
   {id:'f_ski', icon:'mountain', slot:'morning', cost:5000, cat:['active'], winter:true,
     ko:'후라노 스키장', en:'Furano Ski Resort', areako:'기타노미네', areaen:'Kitanomine',
+    ja:'富良野スキー場', areaja:'北の峰',
     dko:'보송한 파우더 스노로 유명한 대형 스키장. 초보 코스도 넉넉해.',
     den:'A big resort famous for fluffy powder, with plenty of beginner runs.',
-    tko:'장비 렌탈은 미리 예약하면 편해.', ten:'Reserve rental gear ahead to save time.'},
+    dja:'ふわふわのパウダースノーで有名な大型スキー場。初心者コースも充実。',
+    tko:'장비 렌탈은 미리 예약하면 편해.', ten:'Reserve rental gear ahead to save time.', tja:'装備のレンタルは事前予約すると楽だよ。'},
   {id:'f_ningle', icon:'staff', slot:'after', cost:0, cat:['culture','heal'], winter:true,
     ko:'닝구르 테라스', en:'Ningle Terrace', areako:'숲속', areaen:'Forest',
+    ja:'ニングルテラス', areaja:'森の中',
     dko:'숲속 통나무 공방들이 불을 밝히는 동화 같은 거리. 겨울밤이 특히 예뻐.',
     den:'A fairy-tale lane of lamplit log craft cabins in the woods — magical at night.',
-    tko:'근처 ‘숲의 시계’ 카페도 들러봐.', ten:'Stop by the nearby Forest Clock café.'},
+    dja:'森の中の丸太工房が灯りをともす童話のような小道。冬の夜は特にきれい。',
+    tko:'근처 ‘숲의 시계’ 카페도 들러봐.', ten:'Stop by the nearby Forest Clock café.', tja:'近くの「森の時計」カフェにも寄ってみて。'},
   {id:'f_snow', icon:'mountain', slot:'after', cost:3000, cat:['active','view'], winter:true,
     ko:'후라노 눈놀이터', en:'Furano Snow Land', areako:'근교', areaen:'Near Furano',
+    ja:'富良野スノーランド', areaja:'近郊',
     dko:'스노모빌·바나나보트·튜빙까지 즐기는 겨울 액티비티 천국.',
     den:'Snowmobiles, banana boats and tubing — a winter activity playground.',
-    tko:'두꺼운 방수 장갑은 필수야.', ten:'Bring thick waterproof gloves.'},
+    dja:'スノーモービル・バナナボート・チュービングまで楽しめる冬のアクティビティ天国。',
+    tko:'두꺼운 방수 장갑은 필수야.', ten:'Bring thick waterproof gloves.', tja:'厚手の防水手袋は必須だよ。'},
   {id:'f_cheese', icon:'staff', slot:'after', cost:600, cat:['food','shop'],
     ko:'후라노 치즈공방', en:'Furano Cheese Factory', areako:'근교', areaen:'Near Furano',
+    ja:'富良野チーズ工房', areaja:'近郊',
     dko:'직접 만든 치즈와 아이스크림을 맛보고 체험도 할 수 있는 공방.',
     den:'Taste house-made cheese and ice cream — hands-on workshops too.',
-    tko:'겨울에도 진한 아이스크림은 별미.', ten:'The rich ice cream is a treat even in winter.'},
+    dja:'手作りのチーズとアイスクリームを味わえて、体験もできる工房。',
+    tko:'겨울에도 진한 아이스크림은 별미.', ten:'The rich ice cream is a treat even in winter.', tja:'冬でも濃厚なアイスクリームは絶品。'},
   {id:'f_dinner', icon:'ore', meal:true, slot:'dinner', cost:2800, cat:['food','heal'],
     ko:'후라노 화로구이', en:'Furano Hearth Grill', areako:'시내', areaen:'Town',
+    ja:'富良野の炉端焼き', areaja:'市街',
     dko:'화롯불에 구워 먹는 지역 채소와 고기. 시골 정취 가득한 저녁이야.',
     den:'Local veg and meat grilled over a hearth — a cozy countryside dinner.',
-    tko:'예약하면 따뜻한 자리를 잡을 수 있어.', ten:'Reserve to get a warm seat by the fire.'}
+    dja:'炉端で焼いて食べる地元野菜とお肉。田舎情緒たっぷりの夕食だよ。',
+    tko:'예약하면 따뜻한 자리를 잡을 수 있어.', ten:'Reserve to get a warm seat by the fire.', tja:'予約すれば暖かい席を取れるよ。'}
  ],
  biei:[
   {id:'b_morning', icon:'ore', meal:true, slot:'morning', cost:1100, cat:['food'],
     ko:'비에이 빵집 아침', en:'Biei Bakery Morning', areako:'시내', areaen:'Town',
+    ja:'美瑛パン屋の朝', areaja:'市街',
     dko:'언덕 마을의 작은 빵집에서 즐기는 소박하고 따뜻한 아침.',
     den:'A simple, warm breakfast at a tiny bakery in the hill town.',
-    tko:'비에이 우유로 만든 빵이 별미야.', ten:'Breads made with Biei milk are a treat.'},
+    dja:'丘の町の小さなパン屋で楽しむ、素朴で温かい朝ごはん。',
+    tko:'비에이 우유로 만든 빵이 별미야.', ten:'Breads made with Biei milk are a treat.', tja:'美瑛牛乳で作ったパンが絶品。'},
   {id:'b_curry', icon:'ore', meal:true, slot:'lunch', cost:1300, cat:['food'],
     ko:'비에이 카레우동', en:'Biei Curry Udon', areako:'시내', areaen:'Town',
+    ja:'美瑛カレーうどん', areaja:'市街',
     dko:'쫄깃한 면에 진한 카레 국물. 추운 언덕 산책 후 속을 데우기 딱이야.',
     den:'Chewy udon in rich curry broth — perfect after a cold hill walk.',
-    tko:'비에이의 대표 향토 음식이야.', ten:'It’s Biei’s signature local dish.'},
+    dja:'コシのある麺に濃厚なカレースープ。寒い丘の散歩のあと体を温めるのにぴったり。',
+    tko:'비에이의 대표 향토 음식이야.', ten:'It’s Biei’s signature local dish.', tja:'美瑛を代表する郷土料理だよ。'},
   {id:'b_bluepond', icon:'mountain', slot:'morning', cost:0, cat:['view'], winter:true,
     ko:'흰수염 폭포 & 청의 연못', en:'Blue Pond & Shirahige Falls', areako:'시로가네', areaen:'Shirogane',
+    ja:'白ひげの滝＆青い池', areaja:'白金',
     dko:'겨울엔 라이트업으로 푸르게 빛나는 신비로운 연못과 얼어붙은 폭포.',
     den:'In winter the mystical blue pond and frozen falls glow under light-ups.',
-    tko:'겨울 라이트업은 저녁에만 켜져.', ten:'The winter light-up runs evenings only.'},
+    dja:'冬はライトアップで青く輝く神秘的な池と凍った滝。',
+    tko:'겨울 라이트업은 저녁에만 켜져.', ten:'The winter light-up runs evenings only.', tja:'冬のライトアップは夜だけ点灯するよ。'},
   {id:'b_hills', icon:'mountain', slot:'after', cost:0, cat:['view','heal'], winter:true,
     ko:'비에이 언덕', en:'Biei Hills', areako:'패치워크로드', areaen:'Patchwork Road',
+    ja:'美瑛の丘', areaja:'パッチワークの路',
     dko:'끝없이 펼쳐진 눈 덮인 언덕과 외딴 나무들. 홋카이도 엽서 그 자체야.',
     den:'Endless snowy hills dotted with lone trees — Hokkaido on a postcard.',
-    tko:'‘켄과 메리의 나무’가 포토 스폿이야.', ten:'The “Ken & Mary Tree” is the photo spot.'},
+    dja:'果てしなく広がる雪の丘と一本だけの木々。北海道の絵はがきそのもの。',
+    tko:'‘켄과 메리의 나무’가 포토 스폿이야.', ten:'The “Ken & Mary Tree” is the photo spot.', tja:'「ケンとメリーの木」がフォトスポット。'},
   {id:'b_shikisai', icon:'mountain', slot:'after', cost:500, cat:['view','active'], winter:true,
     ko:'시키사이노오카', en:'Shikisai-no-Oka', areako:'근교', areaen:'Near Biei',
+    ja:'四季彩の丘', areaja:'近郊',
     dko:'여름엔 꽃밭, 겨울엔 새하얀 설원에서 스노래프팅·스노모빌을 즐겨.',
     den:'Flower fields in summer; in winter, snow-rafting and snowmobiles on white fields.',
-    tko:'알파카 목장도 함께 있어.', ten:'There’s an alpaca farm on site too.'},
+    dja:'夏は花畑、冬は真っ白な雪原でスノーラフティング・スノーモービルを楽しもう。',
+    tko:'알파카 목장도 함께 있어.', ten:'There’s an alpaca farm on site too.', tja:'アルパカ牧場も併設されてるよ。'},
   {id:'b_dinner', icon:'ore', meal:true, slot:'dinner', cost:2400, cat:['food','heal'],
     ko:'비에이 향토 요리', en:'Biei Farm Dinner', areako:'시내', areaen:'Town',
+    ja:'美瑛の郷土料理', areaja:'市街',
     dko:'지역 농가의 채소와 고기로 차린 정갈한 시골 저녁상.',
     den:'A tidy farm-to-table dinner of local veg and meat.',
-    tko:'한적하니 예약하고 가면 좋아.', ten:'It’s quiet — reserving helps.'}
+    dja:'地元農家の野菜とお肉でととのえた、きちんとした田舎の夕食。',
+    tko:'한적하니 예약하고 가면 좋아.', ten:'It’s quiet — reserving helps.', tja:'静かだから予約して行くといいよ。'}
  ],
  wakkanai:[
   {id:'w_milk', icon:'ore', meal:true, slot:'morning', cost:900, cat:['food'],
     ko:'소야 우유 아침', en:'Soya Milk Morning', areako:'시내', areaen:'Town',
+    ja:'宗谷ミルクの朝', areaja:'市街',
     dko:'최북단 목장의 진한 우유와 요구르트로 든든하게 출발해.',
     den:'Start with rich milk and yogurt from the northernmost farms.',
-    tko:'소야 흑우 버거도 별미야.', ten:'The Soya black-beef burger is a treat.'},
+    dja:'最北端の牧場の濃厚な牛乳とヨーグルトでしっかりスタート。',
+    tko:'소야 흑우 버거도 별미야.', ten:'The Soya black-beef burger is a treat.', tja:'宗谷黒牛バーガーも絶品だよ。'},
   {id:'w_uni', icon:'ore', meal:true, slot:'lunch', cost:3500, cat:['food'],
     ko:'성게 해산물 덮밥', en:'Uni Seafood Bowl', areako:'항구', areaen:'Harbour',
+    ja:'ウニ海鮮丼', areaja:'港',
     dko:'차가운 바다가 키운 진한 성게와 게가 듬뿍. 최북단의 사치야.',
     den:'Cold-sea uni and crab piled high — a northernmost luxury.',
-    tko:'여름 성게철이 절정이지만 겨울 게도 훌륭해.', ten:'Summer is peak uni, but winter crab is superb.'},
+    dja:'冷たい海が育てた濃厚なウニとカニがたっぷり。最北端の贅沢だよ。',
+    tko:'여름 성게철이 절정이지만 겨울 게도 훌륭해.', ten:'Summer is peak uni, but winter crab is superb.', tja:'夏がウニの最盛期だけど冬のカニも素晴らしい。'},
   {id:'w_soya', icon:'mountain', slot:'morning', cost:0, cat:['view'], winter:true,
     ko:'소야미사키', en:'Cape Soya', areako:'최북단', areaen:'Northernmost point',
+    ja:'宗谷岬', areaja:'最北端',
     dko:'일본 최북단 기념비가 선 곶. 거센 바람과 끝없는 오호츠크해가 펼쳐져.',
     den:'The cape with Japan’s northernmost monument — fierce wind and endless sea.',
-    tko:'방한 단단히! 바람이 정말 매서워.', ten:'Bundle up — the wind is brutal.'},
+    dja:'日本最北端の記念碑が立つ岬。強い風と果てしないオホーツク海が広がるよ。',
+    tko:'방한 단단히! 바람이 정말 매서워.', ten:'Bundle up — the wind is brutal.', tja:'防寒はしっかり！風が本当に厳しいよ。'},
   {id:'w_nosshap', icon:'mountain', slot:'night', cost:0, cat:['view','heal'], winter:true,
     ko:'노샤푸 곶 석양', en:'Cape Noshappu Sunset', areako:'서해안', areaen:'West coast',
+    ja:'ノシャップ岬の夕日', areaja:'西海岸',
     dko:'리시리 섬 너머로 지는 석양과 돌고래 등대가 어우러진 명소.',
     den:'Sunset behind Rishiri Island beside a dolphin-shaped lighthouse.',
-    tko:'맑은 날엔 리시리 후지가 또렷이 보여.', ten:'On clear days, Mt. Rishiri stands out sharply.'},
+    dja:'利尻島の向こうに沈む夕日とイルカの灯台が調和する名所。',
+    tko:'맑은 날엔 리시리 후지가 또렷이 보여.', ten:'On clear days, Mt. Rishiri stands out sharply.', tja:'晴れた日は利尻富士がくっきり見えるよ。'},
   {id:'w_park', icon:'staff', slot:'after', cost:0, cat:['culture','view'],
     ko:'왓카나이 방파제 돔', en:'Wakkanai Breakwater Dome', areako:'항구', areaen:'Harbour',
+    ja:'稚内港北防波堤ドーム', areaja:'港',
     dko:'70개 기둥이 늘어선 반원형 콘크리트 돔. 독특한 건축이 인상적이야.',
     den:'A half-arched dome of 70 columns — striking, unusual architecture.',
-    tko:'사진이 정말 멋지게 나오는 곳.', ten:'A seriously photogenic spot.'},
+    dja:'70本の柱が並ぶ半円形のコンクリートドーム。独特な建築が印象的。',
+    tko:'사진이 정말 멋지게 나오는 곳.', ten:'A seriously photogenic spot.', tja:'写真がすごく映える場所だよ。'},
   {id:'w_onsen', icon:'cave_entrance', slot:'night', cost:1200, cat:['onsen','heal'], winter:true,
     ko:'왓카나이 온천', en:'Wakkanai Onsen', areako:'시내', areaen:'Town',
+    ja:'稚内温泉', areaja:'市街',
     dko:'매서운 북녘 바람을 녹이는 따끈한 온천. 여행의 피로가 싹 풀려.',
     den:'A hot soak to melt the harsh northern wind and travel fatigue.',
-    tko:'바다 전망 노천탕이 있는 곳을 골라.', ten:'Pick one with a sea-view open-air bath.'},
+    dja:'厳しい北の風を溶かす温かい温泉。旅の疲れがすっきり取れるよ。',
+    tko:'바다 전망 노천탕이 있는 곳을 골라.', ten:'Pick one with a sea-view open-air bath.', tja:'海が見える露天風呂のある所を選んで。'},
   {id:'w_crab', icon:'ore', meal:true, slot:'dinner', cost:4000, cat:['food'],
     ko:'왓카나이 게요리', en:'Wakkanai Crab Dinner', areako:'시내', areaen:'Town',
+    ja:'稚内のカニ料理', areaja:'市街',
     dko:'털게·대게를 통째로 즐기는 호화로운 게 코스. 북해의 진미야.',
     den:'A lavish course of whole hairy and snow crab — the north sea’s finest.',
-    tko:'게 코스는 미리 예약하는 게 안전해.', ten:'Book the crab course ahead to be safe.'}
+    dja:'毛ガニ・ズワイガニを丸ごと楽しむ豪華なカニコース。北の海の珍味だよ。',
+    tko:'게 코스는 미리 예약하는 게 안전해.', ten:'Book the crab course ahead to be safe.', tja:'カニコースは事前予約が安心だよ。'}
  ],
  shiretoko:[
   {id:'sh_morning', icon:'ore', meal:true, slot:'morning', cost:1600, cat:['food'],
     ko:'우토로 어항 아침', en:'Utoro Harbour Morning', areako:'우토로', areaen:'Utoro',
+    ja:'ウトロ漁港の朝', areaja:'ウトロ',
     dko:'작은 어항 식당에서 맛보는 갓 잡은 연어·게의 해산물 아침.',
     den:'Just-caught salmon and crab at a tiny fishing-harbour diner.',
-    tko:'연어알 덮밥이 특히 인기야.', ten:'The salmon-roe bowl is the favorite.'},
+    dja:'小さな漁港の食堂で味わう、採れたての鮭・カニの海鮮朝ごはん。',
+    tko:'연어알 덮밥이 특히 인기야.', ten:'The salmon-roe bowl is the favorite.', tja:'いくら丼が特に人気だよ。'},
   {id:'sh_ramen', icon:'ore', meal:true, slot:'lunch', cost:1100, cat:['food'],
     ko:'우토로 해물라멘', en:'Utoro Seafood Ramen', areako:'우토로', areaen:'Utoro',
+    ja:'ウトロ海鮮ラーメン', areaja:'ウトロ',
     dko:'시레토코 바다가 우러난 진한 해물 국물 라멘. 추운 오지에서 큰 위로야.',
     den:'Rich seafood-broth ramen — a big comfort out in the cold wilderness.',
-    tko:'유빙 워크 후에 먹으면 최고.', ten:'Best right after a drift-ice walk.'},
+    dja:'知床の海がにじみ出た濃厚な海鮮スープのラーメン。寒い秘境で大きな癒やしだよ。',
+    tko:'유빙 워크 후에 먹으면 최고.', ten:'Best right after a drift-ice walk.', tja:'流氷ウォークのあとに食べると最高。'},
   {id:'sh_driftice', icon:'mountain', slot:'morning', cost:5000, cat:['active','view'], winter:true,
     ko:'유빙 워크', en:'Drift Ice Walk', areako:'오호츠크해', areaen:'Sea of Okhotsk',
+    ja:'流氷ウォーク', areaja:'オホーツク海',
     dko:'드라이슈트를 입고 떠다니는 유빙 위를 걷는 시레토코만의 겨울 체험.',
     den:'In a dry suit, walk across floating drift ice — Shiretoko’s signature winter thrill.',
-    tko:'1~3월 유빙 시즌에만 가능해. 예약 필수.', ten:'Jan–Mar drift-ice season only — reserve ahead.'},
+    dja:'ドライスーツを着て漂う流氷の上を歩く、知床ならではの冬体験。',
+    tko:'1~3월 유빙 시즌에만 가능해. 예약 필수.', ten:'Jan–Mar drift-ice season only — reserve ahead.', tja:'1〜3月の流氷シーズンだけ可能。予約必須。'},
   {id:'sh_falls', icon:'mountain', slot:'after', cost:0, cat:['view','heal'], winter:true,
     ko:'오신코신 폭포', en:'Oshinkoshin Falls', areako:'국도변', areaen:'Roadside',
+    ja:'オシンコシンの滝', areaja:'国道沿い',
     dko:'두 갈래로 갈라져 떨어지는 폭포. 겨울엔 얼어붙은 빙폭이 장관이야.',
     den:'A twin-stream waterfall that freezes into a spectacular ice fall in winter.',
-    tko:'계단이 미끄러우니 아이젠이 있으면 좋아.', ten:'Steps get icy — crampons help.'},
+    dja:'二筋に分かれて落ちる滝。冬は凍りついた氷瀑が圧巻だよ。',
+    tko:'계단이 미끄러우니 아이젠이 있으면 좋아.', ten:'Steps get icy — crampons help.', tja:'階段が滑るからアイゼンがあるといいよ。'},
   {id:'sh_center', icon:'staff', slot:'after', cost:500, cat:['culture','heal'],
     ko:'시레토코 자연센터', en:'Shiretoko Nature Center', areako:'우토로', areaen:'Utoro',
+    ja:'知床自然センター', areaja:'ウトロ',
     dko:'세계자연유산 시레토코의 생태를 배우고 스노슈 투어도 신청할 수 있어.',
     den:'Learn about the UNESCO wilderness and book guided snowshoe tours.',
-    tko:'스노슈 가이드 투어를 여기서 예약해.', ten:'Book the guided snowshoe tour here.'},
+    dja:'世界自然遺産・知床の生態を学べて、スノーシューツアーも申し込めるよ。',
+    tko:'스노슈 가이드 투어를 여기서 예약해.', ten:'Book the guided snowshoe tour here.', tja:'スノーシューのガイドツアーはここで予約して。'},
   {id:'sh_onsen', icon:'cave_entrance', slot:'night', cost:1500, cat:['onsen','heal'], winter:true,
     ko:'우토로 온천', en:'Utoro Onsen', areako:'우토로', areaen:'Utoro',
+    ja:'ウトロ温泉', areaja:'ウトロ',
     dko:'유빙이 떠다니는 바다를 바라보며 몸을 녹이는 오지의 온천.',
     den:'Soak while gazing at a drift-ice sea — a remote, restorative onsen.',
-    tko:'노천탕에서 보는 별이 끝내줘.', ten:'The stars from the open-air bath are unreal.'},
+    dja:'流氷が漂う海を眺めながら体を温める秘境の温泉。',
+    tko:'노천탕에서 보는 별이 끝내줘.', ten:'The stars from the open-air bath are unreal.', tja:'露天風呂から見る星が最高だよ。'},
   {id:'sh_crab', icon:'ore', meal:true, slot:'dinner', cost:3800, cat:['food'],
     ko:'시레토코 게·해산물', en:'Shiretoko Crab Dinner', areako:'우토로', areaen:'Utoro',
+    ja:'知床のカニ・海鮮', areaja:'ウトロ',
     dko:'오호츠크해의 게와 생선을 푸짐하게 즐기는 오지의 호사스러운 저녁.',
     den:'A lavish remote dinner of Okhotsk crab and fish.',
-    tko:'숙소 정식에 포함된 경우가 많아.', ten:'Often included in your inn’s set dinner.'}
+    dja:'オホーツク海のカニと魚をたっぷり楽しむ、秘境の贅沢な夕食。',
+    tko:'숙소 정식에 포함된 경우가 많아.', ten:'Often included in your inn’s set dinner.', tja:'宿の定食に含まれている場合が多いよ。'}
  ]
 };
 
@@ -1942,7 +2108,7 @@ function activePOI(){
     var rg=regionById(rid);
     arr.forEach(function(p){
       var c={}; for(var k in p) c[k]=p[k];
-      c.region=rid; c.rko=rg?rg.ko:''; c.ren=rg?rg.en:'';
+      c.region=rid; c.rko=rg?rg.ko:''; c.ren=rg?rg.en:''; c.rja=rg?rg.ja:'';
       pool.push(c);
     });
   });
@@ -1950,12 +2116,12 @@ function activePOI(){
 }
 function destName(){
   var ids=(S.dests&&S.dests.length)?S.dests:['hakodate'];
-  if(ids.length===1){ var r=regionById(ids[0]); return r?(S.lang==='ko'?r.ko:r.en):(S.lang==='ko'?'홋카이도':'Hokkaido'); }
-  return S.lang==='ko'?'홋카이도':'Hokkaido';
+  if(ids.length===1){ var r=regionById(ids[0]); return r?tl(r.ko,r.en,r.ja):tl('홋카이도','Hokkaido','北海道'); }
+  return tl('홋카이도','Hokkaido','北海道');
 }
 function destList(){
   var ids=(S.dests&&S.dests.length)?S.dests:['hakodate'];
-  return ids.map(function(id){var r=regionById(id);return r?(S.lang==='ko'?r.ko:r.en):id;}).join(' · ');
+  return ids.map(function(id){var r=regionById(id);return r?tl(r.ko,r.en,r.ja):id;}).join(' · ');
 }
 function buildPlan(){
   var sv=S.survey;
@@ -2005,27 +2171,28 @@ function buildPlan(){
 }
 function slotItem(time, poi){
   return { time:time, id:poi.id, icon:poi.icon, meal:!!poi.meal, cost:poi.cost,
-    region:poi.region, rko:poi.rko, ren:poi.ren,
-    ko:poi.ko, en:poi.en, areako:poi.areako, areaen:poi.areaen, dko:poi.dko, den:poi.den, tko:poi.tko, ten:poi.ten };
+    region:poi.region, rko:poi.rko, ren:poi.ren, rja:poi.rja,
+    ko:poi.ko, en:poi.en, ja:poi.ja, areako:poi.areako, areaen:poi.areaen, areaja:poi.areaja,
+    dko:poi.dko, den:poi.den, dja:poi.dja, tko:poi.tko, ten:poi.ten, tja:poi.tja };
 }
 
 /* ===================== PLAN RENDER ===================== */
 function enterPlan(){
   setDock();
-  say(S.lang==='ko'?'짜잔! 너만을 위한 '+destName()+' 겨울 루트야. 마음에 들어?':'Ta-da! Your very own '+destName()+' winter route. Like it?');
+  say(tl('짜잔! 너만을 위한 '+destName()+' 겨울 루트야. 마음에 들어?','Ta-da! Your very own '+destName()+' winter route. Like it?','じゃーん！君だけの'+destName()+'の冬ルートだよ。気に入った？'));
   renderPlan();
 }
 function relationLabel(){
-  var map={friend:{ko:'친구',en:'Friends'},family:{ko:'가족',en:'Family'},couple:{ko:'연인',en:'Couple'},solo_w:{ko:'동료',en:'Coworkers'}};
-  if(S.users.length<=1) return S.lang==='ko'?'나홀로':'Solo';
-  return L(map[S.survey.relation]||{ko:'일행',en:'Party'});
+  var map={friend:{ko:'친구',en:'Friends',ja:'友達'},family:{ko:'가족',en:'Family',ja:'家族'},couple:{ko:'연인',en:'Couple',ja:'恋人'},solo_w:{ko:'동료',en:'Coworkers',ja:'同僚'}};
+  if(S.users.length<=1) return tl('나홀로','Solo','ひとり');
+  return L(map[S.survey.relation]||{ko:'일행',en:'Party',ja:'仲間'});
 }
 function monthLabel(){
-  var m={11:{ko:'11월',en:'Nov'},12:{ko:'12월',en:'Dec'},1:{ko:'1월',en:'Jan'},2:{ko:'2월',en:'Feb'},3:{ko:'3월',en:'Mar'}};
+  var m={11:{ko:'11월',en:'Nov',ja:'11月'},12:{ko:'12월',en:'Dec',ja:'12月'},1:{ko:'1월',en:'Jan',ja:'1月'},2:{ko:'2월',en:'Feb',ja:'2月'},3:{ko:'3월',en:'Mar',ja:'3月'}};
   return L(m[S.survey.month]);
 }
 function purposeLabels(){
-  return S.survey.purposes.map(function(id){ for(var i=0;i<PURPOSES.length;i++) if(PURPOSES[i].id===id) return S.lang==='ko'?PURPOSES[i].ko:PURPOSES[i].en; return id; }).join(' · ');
+  return S.survey.purposes.map(function(id){ for(var i=0;i<PURPOSES.length;i++) if(PURPOSES[i].id===id) return tl(PURPOSES[i].ko,PURPOSES[i].en,PURPOSES[i].ja); return id; }).join(' · ');
 }
 /* small Instagram + Google-Maps links for each itinerary stop (query: place name near Hakodate) */
 var IG_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.2" cy="6.8" r="1.3" fill="currentColor"/></svg>';
@@ -2034,8 +2201,8 @@ function placeLinks(name, region){
   var ig='https://www.instagram.com/explore/search/keyword/?q='+encodeURIComponent(name);
   var gm='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name+' '+(region||'홋카이도'));
   return '<div class="tc-links">'+
-    '<a class="tcl ig" href="'+ig+'" target="_blank" rel="noopener" title="인스타그램에서 검색">'+IG_SVG+'</a>'+
-    '<a class="tcl gm" href="'+gm+'" target="_blank" rel="noopener" title="구글 지도에서 보기">'+GM_SVG+'</a>'+
+    '<a class="tcl ig" href="'+ig+'" target="_blank" rel="noopener" title="'+tl('인스타그램에서 검색','Search on Instagram','Instagramで検索')+'">'+IG_SVG+'</a>'+
+    '<a class="tcl gm" href="'+gm+'" target="_blank" rel="noopener" title="'+tl('구글 지도에서 보기','View on Google Maps','Googleマップで見る')+'">'+GM_SVG+'</a>'+
   '</div>';
 }
 function renderPlan(){
@@ -2043,53 +2210,53 @@ function renderPlan(){
   var P=PLAN;
   var pct=Math.min(100, Math.round(P.total/S.survey.budget*100));
   var over=P.total>S.survey.budget;
-  var partyTxt=S.users.length+(S.lang==='ko'?'명':' ppl');
+  var partyTxt=S.users.length+tl('명',' ppl','人');
   var html='';
   html+='<div class="plan-hero">'+
     '<div class="scr-kick">'+tr('plan_kick')+'</div>'+
-    '<h2>'+(S.lang==='ko'?destName()+' '+P.nights+'박 '+(P.nights+1)+'일':destName()+' '+P.nights+'N / '+(P.nights+1)+'D')+'</h2>'+
+    '<h2>'+tl(destName()+' '+P.nights+'박 '+(P.nights+1)+'일',destName()+' '+P.nights+'N / '+(P.nights+1)+'D',destName()+' '+P.nights+'泊'+(P.nights+1)+'日')+'</h2>'+
     '<div class="plan-meta">'+
       (S.depart?chip('✈ '+departName()):'')+
       chip(destList())+
       chip(relationLabel())+chip(partyTxt)+chip(monthLabel())+
-      chip(purposeLabels())+chip(S.survey.transit==='car'?(S.lang==='ko'?'렌터카':'Car'):(S.lang==='ko'?'뚜벅이':'Transit'))+
-      chip(S.survey.pace==='relaxed'?(S.lang==='ko'?'느긋':'Relaxed'):(S.lang==='ko'?'알차게':'Packed'))+
-      chip(S.survey.visited==='again'?(S.lang==='ko'?'재방문':'Return'):(S.lang==='ko'?'첫방문':'First'))+
+      chip(purposeLabels())+chip(S.survey.transit==='car'?tl('렌터카','Car','レンタカー'):tl('뚜벅이','Transit','徒歩'))+
+      chip(S.survey.pace==='relaxed'?tl('느긋','Relaxed','ゆったり'):tl('알차게','Packed','ぎっしり'))+
+      chip(S.survey.visited==='again'?tl('재방문','Return','再訪'):tl('첫방문','First','初訪問'))+
     '</div></div>';
 
   html+='<div class="budget-card">'+
     '<div class="bc-top"><span>'+tr('plan_total')+'</span><b>¥'+P.total.toLocaleString()+'</b></div>'+
     '<div class="bc-bar'+(over?' over':'')+'"><div class="bf" style="width:'+pct+'%"></div></div>'+
     '<div class="bc-note">'+(over
-       ? (S.lang==='ko'?'예산(¥'+S.survey.budget.toLocaleString()+')을 살짝 넘었어. 무료 코스 위주로 바꿔줄까? → 다시 짜줘':'Slightly over budget (¥'+S.survey.budget.toLocaleString()+'). Want a cheaper mix? → Re-roll')
-       : (S.lang==='ko'?'예산(¥'+S.survey.budget.toLocaleString()+') 안에서 알차게 담았어. 남는 건 기념품각!':'Comfortably within your budget (¥'+S.survey.budget.toLocaleString()+'). Spend the rest on souvenirs!'))+'</div>'+
+       ? tl('예산(¥'+S.survey.budget.toLocaleString()+')을 살짝 넘었어. 무료 코스 위주로 바꿔줄까? → 다시 짜줘','Slightly over budget (¥'+S.survey.budget.toLocaleString()+'). Want a cheaper mix? → Re-roll','予算（¥'+S.survey.budget.toLocaleString()+'）を少しオーバー。無料コース中心に変える？ → 組み直す')
+       : tl('예산(¥'+S.survey.budget.toLocaleString()+') 안에서 알차게 담았어. 남는 건 기념품각!','Comfortably within your budget (¥'+S.survey.budget.toLocaleString()+'). Spend the rest on souvenirs!','予算（¥'+S.survey.budget.toLocaleString()+'）内にしっかり収めたよ。残りはお土産だね！'))+'</div>'+
     '</div>';
 
   html+='<div class="day-tabs" id="dayTabs">';
   P.days.forEach(function(dp,i){
-    html+='<div class="day-tab'+(i===0?' on':'')+'" data-d="'+i+'">'+(S.lang==='ko'?(dp.day+'일차'):('Day '+dp.day))+'</div>';
+    html+='<div class="day-tab'+(i===0?' on':'')+'" data-d="'+i+'">'+tl(dp.day+'일차','Day '+dp.day,dp.day+'日目')+'</div>';
   });
   html+='</div>';
 
   P.days.forEach(function(dp,i){
     html+='<div class="day-panel'+(i===0?' on':'')+'" data-dp="'+i+'">';
-    var dh = dp.first?(S.lang==='ko'?'도착 & 워밍업':'Arrival & warm-up')
-            :dp.last?(S.lang==='ko'?'마무리 & 출발':'Last day & departure')
-            :(S.lang==='ko'?'본격 탐험':'Full exploration');
-    html+='<div class="day-head">'+(S.lang==='ko'?(dp.day+'일차 · '):('Day '+dp.day+' · '))+dh+'</div>';
+    var dh = dp.first?tl('도착 & 워밍업','Arrival & warm-up','到着 & ウォームアップ')
+            :dp.last?tl('마무리 & 출발','Last day & departure','締めくくり & 出発')
+            :tl('본격 탐험','Full exploration','本格探検');
+    html+='<div class="day-head">'+tl(dp.day+'일차 · ','Day '+dp.day+' · ',dp.day+'日目 · ')+dh+'</div>';
     html+='<div class="tl">';
     dp.items.forEach(function(it,k){
-      var pn=(S.lang==='ko'?it.ko:it.en);
+      var pn=tl(it.ko,it.en,it.ja);
       html+='<div class="tl-item" style="animation-delay:'+(k*0.05)+'s">'+
         '<div class="tl-time">'+it.time+'</div>'+
         '<div class="tl-rail"><div class="tl-icon'+(it.meal?' meal':'')+'"><img class="spr" src="'+SPR+it.icon+'.png"></div><div class="tl-line"></div></div>'+
         '<div class="tl-card">'+
           '<div class="tc-top"><div><div class="tc-name">'+pn+'</div>'+
-          '<div class="tc-area">'+((it.rko?((S.lang==='ko'?it.rko:it.ren)+' · '):'')+(S.lang==='ko'?it.areako:it.areaen))+'</div></div>'+
-          '<div class="tc-cost">'+(it.cost>0?('¥'+it.cost.toLocaleString()):(S.lang==='ko'?'무료':'Free'))+'</div></div>'+
-          '<div class="tc-desc">'+(S.lang==='ko'?it.dko:it.den)+'</div>'+
-          '<div class="tc-tip"><b>TIP </b>'+(S.lang==='ko'?it.tko:it.ten)+'</div>'+
-          placeLinks(pn, S.lang==='ko'?it.rko:it.ren)+
+          '<div class="tc-area">'+((it.rko?(tl(it.rko,it.ren,it.rja)+' · '):'')+tl(it.areako,it.areaen,it.areaja))+'</div></div>'+
+          '<div class="tc-cost">'+(it.cost>0?('¥'+it.cost.toLocaleString()):tl('무료','Free','無料'))+'</div></div>'+
+          '<div class="tc-desc">'+tl(it.dko,it.den,it.dja)+'</div>'+
+          '<div class="tc-tip"><b>TIP </b>'+tl(it.tko,it.ten,it.tja)+'</div>'+
+          placeLinks(pn, tl(it.rko,it.ren,it.rja))+
         '</div></div>';
     });
     html+='</div></div>';
@@ -2113,42 +2280,43 @@ function renderPlan(){
       document.querySelectorAll('.day-panel').forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-dp')===d); });
     };
   });
-  document.getElementById('rerollBtn').onclick=function(){ PLAN=buildPlan(); renderPlan(); saveState('plan'); say(S.lang==='ko'?'새로 짰어! 이건 어때?':'Fresh route! How about this one?'); document.getElementById('plan').scrollTop=0; };
+  document.getElementById('rerollBtn').onclick=function(){ PLAN=buildPlan(); renderPlan(); saveState('plan'); say(tl('새로 짰어! 이건 어때?','Fresh route! How about this one?','新しく組んだよ！これはどう？')); document.getElementById('plan').scrollTop=0; };
   document.getElementById('restartBtn').onclick=function(){ resetAll(); show('title'); };
   document.getElementById('baseFromPlan').onclick=function(){ show('basecamp'); };
 }
 function chip(txt){ return txt?('<div class="chip">'+txt+'</div>'):''; }
 function guideTips(){
   var sv=S.survey, tips=[];
-  var ko=S.lang==='ko';
   if(S.depart){ var dp=departById(S.depart), air=(S.depart==='haneda'||S.depart==='narita');
-    tips.push(ko?(dp.ko+'에서 출발 — '+(air?'신치토세 공항행 직항편을 미리 예약하면 편해.':'홋카이도행 항공·신칸센 연계 시간을 미리 확인해.'))
-                :(dp.en+' departure — '+(air?'book a direct flight to New Chitose ahead.':'check your air/rail connection to Hokkaido.'))); }
-  if([12,1,2].indexOf(sv.month)>=0) tips.push(ko?'한겨울이라 영하 추위 + 눈길! 방수 부츠랑 핫팩은 필수야.':'Deep winter means sub-zero cold and snowy roads — bring waterproof boots and hand warmers.');
-  else tips.push(ko?'초겨울/늦겨울이라 낮엔 견딜 만해도 밤은 쌀쌀해. 겉옷 단단히 챙겨.':'Early/late winter days are mild but nights bite — pack a solid coat.');
-  if(sv.transit==='car') tips.push(ko?'렌터카는 겨울 타이어 옵션 꼭 확인하고, 눈길 운전은 천천히!':'For a rental car, confirm winter tires and drive slow on snow.');
-  else tips.push(ko?'홋카이도는 도시 간 거리가 멀어. JR 패스나 시내 1일권을 잘 활용해.':'Hokkaido towns are far apart — use a JR pass or day tickets wisely.');
-  if(S.dests&&S.dests.length>1) tips.push(ko?'여러 지역을 골랐네! 이동 시간이 기니 같은 권역끼리 묶어 동선을 짜는 게 좋아.':'You picked several regions — group nearby ones to cut long transfers.');
-  if(sv.visited==='again') tips.push(ko?'재방문이니까 시레토코·왓카나이 같은 먼 지역이나 근교 온천도 노려봐.':'Been before? Aim for farther spots like Shiretoko or Wakkanai, or outer onsen.');
-  else tips.push(ko?'처음이라면 삿포로·오타루처럼 접근성 좋은 곳부터 즐기고, 야경 명소는 일몰 직전을 노려.':'First time? Start with easy spots like Sapporo/Otaru, and catch night views right before sunset.');
-  if(S.users.length>=4) tips.push(ko?'인원이 많으니 식당은 미리 예약해두면 마음 편해.':'Big group — reserve restaurants ahead to relax.');
-  tips.push(ko?'야경은 일몰 직전 “매직아워”가 제일 예뻐. 시간 꼭 체크!':'Night views shine brightest in the “magic hour” right before sunset — check the time!');
+    tips.push(tl(
+      dp.ko+'에서 출발 — '+(air?'신치토세 공항행 직항편을 미리 예약하면 편해.':'홋카이도행 항공·신칸센 연계 시간을 미리 확인해.'),
+      dp.en+' departure — '+(air?'book a direct flight to New Chitose ahead.':'check your air/rail connection to Hokkaido.'),
+      dp.ja+'から出発 — '+(air?'新千歳空港行きの直行便を事前に予約すると楽だよ。':'北海道行きの飛行機・新幹線の乗り継ぎ時間を事前に確認してね。'))); }
+  if([12,1,2].indexOf(sv.month)>=0) tips.push(tl('한겨울이라 영하 추위 + 눈길! 방수 부츠랑 핫팩은 필수야.','Deep winter means sub-zero cold and snowy roads — bring waterproof boots and hand warmers.','真冬だから氷点下の寒さ＋雪道！防水ブーツとカイロは必須だよ。'));
+  else tips.push(tl('초겨울/늦겨울이라 낮엔 견딜 만해도 밤은 쌀쌀해. 겉옷 단단히 챙겨.','Early/late winter days are mild but nights bite — pack a solid coat.','初冬・晩冬だから昼は平気でも夜は冷えるよ。アウターはしっかり用意して。'));
+  if(sv.transit==='car') tips.push(tl('렌터카는 겨울 타이어 옵션 꼭 확인하고, 눈길 운전은 천천히!','For a rental car, confirm winter tires and drive slow on snow.','レンタカーは冬タイヤのオプションを必ず確認、雪道はゆっくり運転！'));
+  else tips.push(tl('홋카이도는 도시 간 거리가 멀어. JR 패스나 시내 1일권을 잘 활용해.','Hokkaido towns are far apart — use a JR pass or day tickets wisely.','北海道は都市間の距離が遠いよ。JRパスや市内1日券をうまく活用して。'));
+  if(S.dests&&S.dests.length>1) tips.push(tl('여러 지역을 골랐네! 이동 시간이 기니 같은 권역끼리 묶어 동선을 짜는 게 좋아.','You picked several regions — group nearby ones to cut long transfers.','いくつか地域を選んだね！移動時間が長いから近い地域をまとめて回るといいよ。'));
+  if(sv.visited==='again') tips.push(tl('재방문이니까 시레토코·왓카나이 같은 먼 지역이나 근교 온천도 노려봐.','Been before? Aim for farther spots like Shiretoko or Wakkanai, or outer onsen.','再訪なら知床・稚内みたいな遠い地域や郊外の温泉も狙ってみて。'));
+  else tips.push(tl('처음이라면 삿포로·오타루처럼 접근성 좋은 곳부터 즐기고, 야경 명소는 일몰 직전을 노려.','First time? Start with easy spots like Sapporo/Otaru, and catch night views right before sunset.','初めてなら札幌・小樽みたいなアクセスの良い所から楽しんで、夜景スポットは日没直前を狙って。'));
+  if(S.users.length>=4) tips.push(tl('인원이 많으니 식당은 미리 예약해두면 마음 편해.','Big group — reserve restaurants ahead to relax.','人数が多いからお店は事前に予約しておくと安心だよ。'));
+  tips.push(tl('야경은 일몰 직전 “매직아워”가 제일 예뻐. 시간 꼭 체크!','Night views shine brightest in the “magic hour” right before sunset — check the time!','夜景は日没直前の「マジックアワー」が一番きれい。時間を必ずチェック！'));
   return tips;
 }
 
 /* ===================== CAMP (deco) ===================== */
 var CAMP_ITEMS=[
-  {id:'snowman',  src:'./Asset/el_snowman.png',  h:42, ko:'눈사람',  en:'Snowman'},
-  {id:'tree1',    src:'./sprites/tree1.png',     h:58, ko:'침엽수',  en:'Pine'},
-  {id:'tree2',    src:'./sprites/tree2.png',     h:54, ko:'눈나무',  en:'Snow tree'},
-  {id:'igloo',    src:'./sprites/igloo.png',     h:40, ko:'이글루',  en:'Igloo'},
-  {id:'cabin',    src:'./sprites/cabin.png',     h:50, ko:'통나무집', en:'Cabin'},
-  {id:'cathedral',src:'./sprites/cathedral.png', h:66, ko:'성당',    en:'Chapel'},
-  {id:'lantern',  src:'./sprites/lantern.png',   h:34, ko:'랜턴',    en:'Lantern'},
-  {id:'bush',     src:'./sprites/bush.png',      h:22, ko:'덤불',    en:'Bush'},
-  {id:'moon',     src:'./Asset/el_moon.png',     h:34, ko:'달',      en:'Moon'},
-  {id:'cloud',    src:'./sprites/cloud.png',     h:24, ko:'구름',    en:'Cloud'},
-  {id:'aurora',   src:'./Asset/el_aurora.png',   h:38, ko:'오로라',  en:'Aurora'}
+  {id:'snowman',  src:'./Asset/el_snowman.png',  h:42, ko:'눈사람',  en:'Snowman',   ja:'雪だるま'},
+  {id:'tree1',    src:'./sprites/tree1.png',     h:58, ko:'침엽수',  en:'Pine',      ja:'針葉樹'},
+  {id:'tree2',    src:'./sprites/tree2.png',     h:54, ko:'눈나무',  en:'Snow tree', ja:'雪の木'},
+  {id:'igloo',    src:'./sprites/igloo.png',     h:40, ko:'이글루',  en:'Igloo',     ja:'かまくら'},
+  {id:'cabin',    src:'./sprites/cabin.png',     h:50, ko:'통나무집', en:'Cabin',     ja:'ログハウス'},
+  {id:'cathedral',src:'./sprites/cathedral.png', h:66, ko:'성당',    en:'Chapel',    ja:'教会'},
+  {id:'lantern',  src:'./sprites/lantern.png',   h:34, ko:'랜턴',    en:'Lantern',   ja:'ランタン'},
+  {id:'bush',     src:'./sprites/bush.png',      h:22, ko:'덤불',    en:'Bush',      ja:'茂み'},
+  {id:'moon',     src:'./Asset/el_moon.png',     h:34, ko:'달',      en:'Moon',      ja:'月'},
+  {id:'cloud',    src:'./sprites/cloud.png',     h:24, ko:'구름',    en:'Cloud',     ja:'雲'},
+  {id:'aurora',   src:'./Asset/el_aurora.png',   h:38, ko:'오로라',  en:'Aurora',    ja:'オーロラ'}
 ];
 function campItemById(id){ for(var i=0;i<CAMP_ITEMS.length;i++) if(CAMP_ITEMS[i].id===id) return CAMP_ITEMS[i]; return null; }
 /* placement points on the snowfield — x/y are % of stage; y is where the item's base stands */
@@ -2165,7 +2333,7 @@ function enterCamp(){
   setDock();
   if(campSel==null) campSel=CAMP_ITEMS[0].id;
   if(campActive!=='all' && (typeof campActive!=='number' || campActive>=S.users.length)) campActive=0;
-  if(S.npc) say(S.lang==='ko'?'다들 자기만의 눈밭을 가졌어! 소품을 골라서 마음껏 꾸며봐.':'Everyone gets their own snowfield! Pick props and decorate freely.');
+  if(S.npc) say(tl('다들 자기만의 눈밭을 가졌어! 소품을 골라서 마음껏 꾸며봐.','Everyone gets their own snowfield! Pick props and decorate freely.','みんな自分だけの雪原を持ってるよ！小物を選んで好きに飾ってね。'));
   renderCamp();
 }
 function buildStage(deco){
@@ -2199,9 +2367,9 @@ function placeAt(mi, si){
   if(!u.deco) u.deco={};
   if(campSel==='eraser'){
     if(u.deco[si]==null) return;
-    delete u.deco[si]; campComment(u.name, null, 'clear');
+    delete u.deco[si]; campComment(dispName(u.name), null, 'clear');
   } else {
-    u.deco[si]=campSel; campComment(u.name, campItemById(campSel), 'place');
+    u.deco[si]=campSel; campComment(dispName(u.name), campItemById(campSel), 'place');
   }
   var slot=document.querySelector('#campMain .cs-slot[data-idx="'+si+'"]');
   if(slot) paintSlot(slot, u.deco[si]);
@@ -2209,22 +2377,26 @@ function placeAt(mi, si){
 }
 function campComment(name, item, action){
   if(!S.npc) return;
-  var ko=S.lang==='ko';
   var line;
   if(action==='clear'){
-    line=ko? name+'의 자리에서 하나 치웠어. 다시 꾸며보자!' : 'Cleared a spot in '+name+'’s camp. Let’s redo it!';
+    line=tl(name+'의 자리에서 하나 치웠어. 다시 꾸며보자!','Cleared a spot in '+name+'’s camp. Let’s redo it!',name+'の場所から1つ片づけたよ。また飾ろう！');
   } else {
-    var t=item?(ko?item.ko:item.en):'';
-    var pool=ko?[
-      name+'의 눈밭에 '+t+'! 분위기 산다.',
-      t+', 좋은 선택이야. '+name+'(이)랑 잘 어울려.',
-      '오, '+t+'(을)를 여기에? '+name+' 센스 있네!',
-      name+'의 캠프가 점점 예뻐지는걸?'
-    ]:[
+    var t=item?tl(item.ko,item.en,item.ja):'';
+    var pool=S.lang==='ja'?[
+      name+'の雪原に'+t+'！雰囲気出るね。',
+      t+'、いい選択だよ。'+name+'によく似合う。',
+      'お、'+t+'をここに？'+name+'センスあるね！',
+      name+'のキャンプがどんどんきれいになってる？'
+    ]:S.lang==='en'?[
       name+'’s snowfield gets a '+t+'! Nice.',
       'Good pick — '+t+' suits '+name+'.',
       'Ooh, a '+t+' right there? '+name+' has taste!',
       name+'’s camp keeps getting prettier!'
+    ]:[
+      name+'의 눈밭에 '+t+'! 분위기 산다.',
+      t+', 좋은 선택이야. '+name+'(이)랑 잘 어울려.',
+      '오, '+t+'(을)를 여기에? '+name+' 센스 있네!',
+      name+'의 캠프가 점점 예뻐지는걸?'
     ];
     line=pool[Math.floor(Math.random()*pool.length)];
   }
@@ -2234,12 +2406,12 @@ function renderCamp(){
   var tabs=document.getElementById('campTabs'); tabs.innerHTML='';
   S.users.forEach(function(u,i){
     var t=document.createElement('div'); t.className='camp-tab'+(campActive===i?' on':'');
-    t.textContent=u.name+(i===0?' ♛':'');
+    t.textContent=dispName(u.name)+(i===0?' ♛':'');
     t.onclick=function(){ campActive=i; renderCamp(); };
     tabs.appendChild(t);
   });
   var all=document.createElement('div'); all.className='camp-tab all'+(campActive==='all'?' on':'');
-  all.textContent=(S.lang==='ko'?'다같이':'All');
+  all.textContent=tl('다같이','All','みんな');
   all.onclick=function(){ campActive='all'; renderCamp(); };
   tabs.appendChild(all);
 
@@ -2256,24 +2428,24 @@ function renderCampEdit(main, mi){
 
   var box=document.createElement('div'); box.className='items-panel';
   var ititle=document.createElement('div'); ititle.className='items-title';
-  ititle.textContent=S.lang==='ko'?'소품':'ITEMS';
+  ititle.textContent=tl('소품','ITEMS','小物');
   box.appendChild(ititle);
   var pal=document.createElement('div'); pal.className='camp-palette';
   CAMP_ITEMS.forEach(function(it){
     var p=document.createElement('div'); p.className='pal-item'+(campSel===it.id?' sel':'');
-    p.innerHTML='<img class="spr" src="'+it.src+'"><div class="pl-name">'+(S.lang==='ko'?it.ko:it.en)+'</div>';
+    p.innerHTML='<img class="spr" src="'+it.src+'"><div class="pl-name">'+tl(it.ko,it.en,it.ja)+'</div>';
     p.onclick=function(){ campSel=it.id; renderCamp(); };
     pal.appendChild(p);
   });
   var er=document.createElement('div'); er.className='pal-item eraser'+(campSel==='eraser'?' sel':'');
-  er.innerHTML='✕<div class="pl-name">'+(S.lang==='ko'?'지우개':'Erase')+'</div>';
+  er.innerHTML='✕<div class="pl-name">'+tl('지우개','Erase','消しゴム')+'</div>';
   er.onclick=function(){ campSel='eraser'; renderCamp(); };
   pal.appendChild(er);
   box.appendChild(pal);
   main.appendChild(box);
 
   var hint=document.createElement('div'); hint.className='camp-hint';
-  hint.textContent=S.lang==='ko'?'소품을 고른 뒤 눈밭의 빈 자리(＋)를 눌러 놓아봐. 지우개로 치울 수 있어.':'Pick a prop, then tap an empty spot (＋). Use the eraser to remove.';
+  hint.textContent=tl('소품을 고른 뒤 눈밭의 빈 자리(＋)를 눌러 놓아봐. 지우개로 치울 수 있어.','Pick a prop, then tap an empty spot (＋). Use the eraser to remove.','小物を選んでから雪原の空いた場所（＋）をタップして置いてみて。消しゴムで片づけられるよ。');
   main.appendChild(hint);
   fitStage(wrap, 1);
 }
@@ -2285,7 +2457,7 @@ function renderCampAll(main){
     var st=buildStage(u.deco||{}); fillSlots(st, u.deco||{}, false, i);
     st.style.pointerEvents='none'; mw.appendChild(st); card.appendChild(mw);
     var nm=document.createElement('div'); nm.className='cc-name';
-    nm.innerHTML=u.name+(i===0?'<span class="lead">'+(S.lang==='ko'?'대장':'LEAD')+'</span>':'');
+    nm.innerHTML=dispName(u.name)+(i===0?'<span class="lead">'+tl('대장','LEAD','隊長')+'</span>':'');
     card.appendChild(nm);
     card.onclick=function(){ campActive=i; renderCamp(); };
     grid.appendChild(card);
@@ -2293,7 +2465,7 @@ function renderCampAll(main){
   });
   main.appendChild(grid);
   var hint=document.createElement('div'); hint.className='camp-hint';
-  hint.textContent=S.lang==='ko'?'카드를 누르면 그 친구의 눈밭을 꾸밀 수 있어.':'Tap a card to decorate that friend’s snowfield.';
+  hint.textContent=tl('카드를 누르면 그 친구의 눈밭을 꾸밀 수 있어.','Tap a card to decorate that friend’s snowfield.','カードをタップするとその子の雪原を飾れるよ。');
   main.appendChild(hint);
 }
 function fitStage(wrap, maxScale){
@@ -2314,28 +2486,28 @@ window.addEventListener('resize',function(){ if(current==='camp' && campActive!=
 /* ===================== BASE CAMP (hub) ===================== */
 /* 원정대원 능력치 카드 — 직업 + 스탯 (캠프 꾸미기 대체) */
 var CREW_JOBS=[
-  {id:'thrift',   ko:'총무',     en:'Treasurer'},
-  {id:'booking',  ko:'예약',     en:'Booking'},
-  {id:'guide',    ko:'길잡이',   en:'Navigator'},
-  {id:'interp',   ko:'통역',     en:'Interpreter'},
-  {id:'photo',    ko:'사진작가', en:'Photographer'},
-  {id:'foodscout',ko:'맛집검색', en:'Food scout'}
+  {id:'thrift',   ko:'총무',     en:'Treasurer',    ja:'会計'},
+  {id:'booking',  ko:'예약',     en:'Booking',      ja:'予約'},
+  {id:'guide',    ko:'길잡이',   en:'Navigator',    ja:'案内役'},
+  {id:'interp',   ko:'통역',     en:'Interpreter',  ja:'通訳'},
+  {id:'photo',    ko:'사진작가', en:'Photographer', ja:'カメラ担当'},
+  {id:'foodscout',ko:'맛집검색', en:'Food scout',   ja:'グルメ探し'}
 ];
 /* 멤버별 기본 직업 (다중) — 리셋 시 자동 복원 */
 var DEFAULT_CREW_JOBS={ '은재':['thrift','booking'], '하은':['guide'], '승은':['interp','photo','foodscout'] };
 var CREW_STATS=[
-  {id:'cold', ko:'추위내성', en:'Cold'},
-  {id:'stam', ko:'체력',     en:'Stamina'},
-  {id:'food', ko:'먹방',     en:'Appetite'},
-  {id:'nav',  ko:'길눈',     en:'Sense'},
-  {id:'fun',  ko:'흥',       en:'Fun'}
+  {id:'cold', ko:'추위내성', en:'Cold',     ja:'寒さ耐性'},
+  {id:'stam', ko:'체력',     en:'Stamina',  ja:'体力'},
+  {id:'food', ko:'먹방',     en:'Appetite', ja:'食欲'},
+  {id:'nav',  ko:'길눈',     en:'Sense',    ja:'方向感覚'},
+  {id:'fun',  ko:'흥',       en:'Fun',      ja:'ノリ'}
 ];
 function jobById(id){ for(var i=0;i<CREW_JOBS.length;i++) if(CREW_JOBS[i].id===id) return CREW_JOBS[i]; return null; }
 function enterBasecamp(){
   ensureCrew();
   setDock();
-  if(S.npc) say(S.lang==='ko'?'베이스캠프야! 대원 카드에서 각자 직업이랑 능력치를 정해봐.':'Base camp! Set each crew member’s job and stats on their card.');
-  else say(S.lang==='ko'?'먼저 함께 떠날 길잡이를 정하면 새로운 일정을 짤 수 있어!':'Pick a guide first, then you can plan a new itinerary!');
+  if(S.npc) say(tl('베이스캠프야! 대원 카드에서 각자 직업이랑 능력치를 정해봐.','Base camp! Set each crew member’s job and stats on their card.','ベースキャンプだよ！メンバーカードでそれぞれの役割と能力を決めてね。'));
+  else say(tl('먼저 함께 떠날 길잡이를 정하면 새로운 일정을 짤 수 있어!','Pick a guide first, then you can plan a new itinerary!','まず一緒に旅するガイドを決めると新しい日程を組めるよ！'));
   renderBasecamp();
 }
 function startItinerary(){
@@ -2347,12 +2519,11 @@ function startItinerary(){
 }
 function renderBasecamp(){
   var w=document.getElementById('baseWrap'); w.innerHTML='';
-  var ko=S.lang==='ko';
 
   /* framed scenery banner — pure ambience */
   var hero=document.createElement('div'); hero.className='bc-hero';
   hero.innerHTML='<img src="./Examples/1.gif" alt="">'+
-    '<div class="bc-plate">'+(ko?'❄ 눈길원정대 베이스캠프':'❄ SNOW QUEST BASE CAMP')+'</div>';
+    '<div class="bc-plate">'+tl('❄ 눈길원정대 베이스캠프','❄ SNOW QUEST BASE CAMP','❄ 雪道遠征隊ベースキャンプ')+'</div>';
   w.appendChild(hero);
 
   /* guide + destinations (길잡이 선택은 별도 · 필수) */
@@ -2361,8 +2532,8 @@ function renderBasecamp(){
     var g=npcById(S.npc);
     var gd=document.createElement('div'); gd.className='bc-guide';
     var chips=(S.dests&&S.dests.length)
-      ? S.dests.map(function(id){var r=regionById(id);return '<div class="chip">'+(r?(ko?r.ko:r.en):id)+'</div>';}).join('')
-      : '<div class="chip">'+(ko?'목적지 미정':'TBD')+'</div>';
+      ? S.dests.map(function(id){var r=regionById(id);return '<div class="chip">'+(r?tl(r.ko,r.en,r.ja):id)+'</div>';}).join('')
+      : '<div class="chip">'+tl('목적지 미정','TBD','目的地未定')+'</div>';
     gd.innerHTML=
       '<div class="bc-portrait"><img class="spr" src="'+SPR+g.img+'" style="height:'+Math.min(g.gh||60,62)+'px;width:auto"></div>'+
       '<div class="bc-gtext"><div class="bc-gname">'+L(g.name)+'</div><div class="bc-grole">'+L(g.role)+'</div>'+
@@ -2388,19 +2559,19 @@ function renderBasecamp(){
   var hasTrip = !!PLAN || (S.dests && S.dests.length>0) || !!S.depart;
   if(!hasTrip){
     op.style.color='var(--g4)'; op.style.fontSize='13px'; op.style.lineHeight='1.5';
-    op.textContent=ko?'아직 짠 일정이 없어 · 아래 ‘＋ 새로운 일정 추가’로 시작해!':'No itinerary yet · tap “＋ New itinerary” below to start!';
+    op.textContent=tl('아직 짠 일정이 없어 · 아래 ‘＋ 새로운 일정 추가’로 시작해!','No itinerary yet · tap “＋ New itinerary” below to start!','まだ組んだ日程がないよ · 下の「＋ 新しい日程を追加」から始めて！');
   } else {
     var bits=[];
     if(S.depart) bits.push(chip('✈ '+departName()));
     bits.push(chip(relationLabel()));
-    bits.push(chip(S.users.length+(ko?'명':' ppl')));
+    bits.push(chip(S.users.length+tl('명',' ppl','人')));
     if(sv.month) bits.push(chip(monthLabel()));
     if(sv.purposes&&sv.purposes.length) bits.push(chip(purposeLabels()));
-    bits.push(chip(sv.nights+(ko?'박 '+(sv.nights+1)+'일':'N/'+(sv.nights+1)+'D')));
-    if(sv.transit) bits.push(chip(sv.transit==='car'?(ko?'렌터카':'Car'):(ko?'뚜벅이':'Transit')));
-    if(sv.pace) bits.push(chip(sv.pace==='relaxed'?(ko?'느긋':'Relaxed'):(ko?'알차게':'Packed')));
-    if(sv.visited) bits.push(chip(sv.visited==='again'?(ko?'재방문':'Return'):(ko?'첫방문':'First')));
-    bits.push(chip('¥'+(sv.budget||0).toLocaleString()+(ko?' /1인':' /pp')));
+    bits.push(chip(sv.nights+tl('박 '+(sv.nights+1)+'일','N/'+(sv.nights+1)+'D','泊'+(sv.nights+1)+'日')));
+    if(sv.transit) bits.push(chip(sv.transit==='car'?tl('렌터카','Car','レンタカー'):tl('뚜벅이','Transit','徒歩')));
+    if(sv.pace) bits.push(chip(sv.pace==='relaxed'?tl('느긋','Relaxed','ゆったり'):tl('알차게','Packed','ぎっしり')));
+    if(sv.visited) bits.push(chip(sv.visited==='again'?tl('재방문','Return','再訪'):tl('첫방문','First','初訪問')));
+    bits.push(chip('¥'+(sv.budget||0).toLocaleString()+tl(' /1인',' /pp',' /1人')));
     op.innerHTML=bits.join('');
   }
   w.appendChild(op);
@@ -2415,10 +2586,10 @@ function renderBasecamp(){
     var card=document.createElement('div'); card.className='bc-member';
     var top=document.createElement('div'); top.className='bc-m-top';
     if(!Array.isArray(u.jobs)) u.jobs=((DEFAULT_CREW_JOBS&&DEFAULT_CREW_JOBS[u.name])||[]).slice();
-    var jnames=u.jobs.map(function(id){var j=jobById(id);return j?(ko?j.ko:j.en):null;}).filter(Boolean).join(' · ');
+    var jnames=u.jobs.map(function(id){var j=jobById(id);return j?tl(j.ko,j.en,j.ja):null;}).filter(Boolean).join(' · ');
     top.innerHTML='<div class="bc-m-ava"><img class="spr" src="./Asset/el_snowman.png"></div>'+
-      '<div class="bc-m-name">'+u.name+(jnames?'<div style="font-size:11px;color:var(--gold);font-weight:700;margin-top:2px">'+jnames+'</div>':'')+'</div>'+
-      (idx===0?'<div class="bc-m-lead">'+(ko?'대장':'LEAD')+'</div>':'');
+      '<div class="bc-m-name">'+dispName(u.name)+(jnames?'<div style="font-size:11px;color:var(--gold);font-weight:700;margin-top:2px">'+jnames+'</div>':'')+'</div>'+
+      (idx===0?'<div class="bc-m-lead">'+tl('대장','LEAD','隊長')+'</div>':'');
     card.appendChild(top);
 
     /* 직업 선택 (다중) */
@@ -2426,7 +2597,7 @@ function renderBasecamp(){
     CREW_JOBS.forEach(function(j){
       var on=u.jobs.indexOf(j.id)>=0;
       var c=document.createElement('div'); c.className='bc-job'+(on?' sel':'');
-      c.textContent=(ko?j.ko:j.en);
+      c.textContent=tl(j.ko,j.en,j.ja);
       c.onclick=function(){
         var ix=u.jobs.indexOf(j.id);
         if(ix>=0) u.jobs.splice(ix,1); else u.jobs.push(j.id);
@@ -2441,7 +2612,7 @@ function renderBasecamp(){
     CREW_STATS.forEach(function(s){
       var v=u.stats[s.id]||3;
       var row=document.createElement('div'); row.className='bc-stat';
-      var lab=document.createElement('span'); lab.className='st-label'; lab.textContent=(ko?s.ko:s.en);
+      var lab=document.createElement('span'); lab.className='st-label'; lab.textContent=tl(s.ko,s.en,s.ja);
       var pips=document.createElement('div'); pips.className='st-pips';
       for(var pi=1;pi<=5;pi++){
         (function(val){
@@ -2463,11 +2634,11 @@ function renderBasecamp(){
       f.appendChild(lb); f.appendChild(inp); return f;
     }
     var fields=document.createElement('div'); fields.className='bc-fields';
-    fields.appendChild(field(ko?'한마디':'Note',          'comment',  tr('base_cmt_ph'), 40));
-    fields.appendChild(field(ko?'좋아하는 음식':'Likes',    'foodLike', ko?'예: 라멘, 게, 성게':'e.g. ramen, crab', 40));
-    fields.appendChild(field(ko?'싫어하는 음식':'Dislikes', 'foodHate', ko?'예: 고수, 낫토':'e.g. cilantro, natto', 40));
-    fields.appendChild(field(ko?'꼭 가고 싶은 곳':'Must-visit','wish',    ko?'예: 하코다테 야경':'e.g. Hakodate night view', 50));
-    fields.appendChild(field(ko?'💴 페이페이 (경비 정산)':'💴 PayPay (settle)','paypay', ko?'PayPay ID / 전화번호':'PayPay ID / phone', 40, 'pay'));
+    fields.appendChild(field(tl('한마디','Note','一言'),                  'comment',  tr('base_cmt_ph'), 40));
+    fields.appendChild(field(tl('좋아하는 음식','Likes','好きな食べ物'),    'foodLike', tl('예: 라멘, 게, 성게','e.g. ramen, crab','例: ラーメン、カニ、ウニ'), 40));
+    fields.appendChild(field(tl('싫어하는 음식','Dislikes','苦手な食べ物'), 'foodHate', tl('예: 고수, 낫토','e.g. cilantro, natto','例: パクチー、納豆'), 40));
+    fields.appendChild(field(tl('꼭 가고 싶은 곳','Must-visit','絶対行きたい所'),'wish',    tl('예: 하코다테 야경','e.g. Hakodate night view','例: 函館の夜景'), 50));
+    fields.appendChild(field(tl('💴 페이페이 (경비 정산)','💴 PayPay (settle)','💴 PayPay（精算）'),'paypay', tl('PayPay ID / 전화번호','PayPay ID / phone','PayPay ID / 電話番号'), 40, 'pay'));
     card.appendChild(fields);
 
     roster.appendChild(card);
@@ -2485,7 +2656,7 @@ function renderBasecamp(){
     pv.onclick=function(){ show('plan'); };
     foot.appendChild(pv);
   }
-  var rs=document.createElement('button'); rs.className='btn ghost'; rs.textContent=(ko?'⟳ 모든 설정 리셋':'⟳ Reset all');
+  var rs=document.createElement('button'); rs.className='btn ghost'; rs.textContent=tl('⟳ 모든 설정 리셋','⟳ Reset all','⟳ 全設定リセット');
   rs.onclick=resetEverything;
   foot.appendChild(rs);
   w.appendChild(foot);
@@ -2497,8 +2668,7 @@ function renderBasecamp(){
 }
 /* 베이스캠프 · 모든 설정 리셋 — 여행/길잡이/대원 직업·능력치·한마디까지 전부 초기화 */
 function resetEverything(){
-  var ko=S.lang==='ko';
-  if(!confirm(ko?'모든 설정을 초기화할까?\n(길잡이 · 여행 일정 · 대원 직업/능력치/한마디 전부 삭제)':'Reset everything?\n(Guide, trip, and all crew jobs/stats/comments)')) return;
+  if(!confirm(tl('모든 설정을 초기화할까?\n(길잡이 · 여행 일정 · 대원 직업/능력치/한마디 전부 삭제)','Reset everything?\n(Guide, trip, and all crew jobs/stats/comments)','すべての設定を初期化する？\n（ガイド・旅の日程・メンバーの役割/能力/一言を全部削除）'))) return;
   try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
   resetAll();          /* S.npc/users/depart/dest/dests/route/survey 초기화 */
   PLAN=null;
@@ -2524,6 +2694,10 @@ function resetAll(){
 /* ===================== LANGUAGE ===================== */
 function applyLang(){
   document.documentElement.lang=S.lang;
+  document.querySelectorAll('#langSel .lang-opt').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-lang')===S.lang); });
+  /* title logo: Korean uses the title image; Japanese uses a jp-font text title */
+  var koT=document.querySelector('#title .kotitle'), jaT=document.getElementById('jaTitle');
+  if(koT&&jaT){ var isJa=(S.lang==='ja'); koT.style.display=isJa?'none':'block'; jaT.style.display=isJa?'block':'none'; }
   document.querySelectorAll('[data-t]').forEach(function(el){ el.innerHTML=tr(el.getAttribute('data-t')); });
   document.querySelectorAll('[data-ph]').forEach(function(el){ el.setAttribute('placeholder', tr(el.getAttribute('data-ph'))); });
   buildGuides();
@@ -2537,6 +2711,17 @@ function applyLang(){
 }
 
 /* ===================== START ===================== */
+/* language selector (title screen) */
+function setLang(code){
+  if(code!=='ko'&&code!=='en'&&code!=='ja') return;
+  S.lang=code;
+  applyLang();
+  try{ saveState(current); }catch(e){}
+}
+document.querySelectorAll('#langSel .lang-opt').forEach(function(b){
+  b.onclick=function(){ setLang(this.getAttribute('data-lang')); };
+});
+
 document.getElementById('toLoginBtn').onclick=function(){
   var ag=document.getElementById('authgate'); if(!ag) return;
   ag.querySelector('#agStep1').style.display='block';
@@ -2652,10 +2837,9 @@ function subscribeTrip(){
 function updateSyncBar(){
   var bar=document.getElementById('syncbar'); if(!bar||!SYNC.me) return;
   bar.classList.add('show');
-  var ko=S.lang==='ko';
   document.getElementById('sbMe').innerHTML =
     '<span class="sb-dot'+(SYNC.online?'':' off')+'"></span><span class="sb-me">'+SYNC.me.name+'</span>'+
-    (SYNC.me.role==='master'?' <span class="sb-master">🛡 '+(ko?'관리자':'admin')+'</span>':'');
+    (SYNC.me.role==='master'?' <span class="sb-master">🛡 '+tl('관리자','admin','管理者')+'</span>':'');
   var ed=document.getElementById('sbEdit');
   ed.className='sb-edit';
   ed.textContent = (SYNC.lastEditor && SYNC.lastEditor!==SYNC.me.name) ? ('✏ '+SYNC.lastEditor) : '';
@@ -2663,7 +2847,7 @@ function updateSyncBar(){
 }
 function adminResetTrip(){
   if(!SYNC.me || SYNC.me.role!=='master') return;
-  if(!confirm(S.lang==='ko'?'여행 전체를 초기화할까? (셋 모두의 화면에서 지워져)':'Reset the whole trip for everyone?')) return;
+  if(!confirm(tl('여행 전체를 초기화할까? (셋 모두의 화면에서 지워져)','Reset the whole trip for everyone?','旅全体を初期化する？（3人全員の画面から消えるよ）'))) return;
   resetAll();
   if(SYNC.ref){
     SYNC.ref.set(sharedPayload({ updatedBy:SYNC.me.name, updatedClient:SYNC.clientId,
